@@ -28,3 +28,5 @@ Thumbs.db
 # Static and media files (if collected/generated)
 staticfiles/
 media/
+
+
