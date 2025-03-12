@@ -74,3 +74,22 @@ class Share(models.Model):
     def __str__(self):
         return f"{self.user.username} shared post {self.post.id}"
 
+class DietPlan(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="diet_plans", null=True, blank=True)  # Null if it's a general diet plan
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    meals = models.JSONField()  # Store meals as JSON (e.g., {"Breakfast": "Oatmeal", "Lunch": "Grilled Chicken", ...})
+    is_custom = models.BooleanField(default=False)  # True if created by the user
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({'Custom' if self.is_custom else 'General'})"
+    
+class ChatMessage(models.Model):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
+    message = models.TextField()
+    timestamp = models.DateTimeField(default=now)
+
+    def __str__(self):
+        return f"Message from {self.sender.username} to {self.receiver.username} at {self.timestamp}"
