@@ -125,38 +125,42 @@ navLinksItems.forEach(link => {
   });
 });
 
-// Dark Mode Toggle
+// Dark Mode Toggle - Fixed Implementation
 themeToggle.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
+  // Toggle dark mode class on body
+  document.body.classList.toggle('dark-mode');
+  
+  // Get sun and moon icons
+  const sunIcon = themeToggle.querySelector('.sun');
+  const moonIcon = themeToggle.querySelector('.moon');
+  
+  // Set theme preference in localStorage
+  if (document.body.classList.contains('dark-mode')) {
+    localStorage.setItem('theme', 'dark');
+    // Show moon icon, hide sun icon
+    if (sunIcon) sunIcon.style.display = 'none';
+    if (moonIcon) moonIcon.style.display = 'block';
+  } else {
+    localStorage.setItem('theme', 'light');
+    // Show sun icon, hide moon icon
+    if (sunIcon) sunIcon.style.display = 'block';
+    if (moonIcon) moonIcon.style.display = 'none';
+  }
+});
+
+// Apply saved theme preference when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('theme');
+  
+  if (savedTheme === 'dark') {
+    document.body.classList.add('dark-mode');
     
-    // Update the toggle's appearance
+    // Update toggle appearance for dark mode
     const sunIcon = themeToggle.querySelector('.sun');
     const moonIcon = themeToggle.querySelector('.moon');
-    
-    if (document.body.classList.contains('dark-mode')) {
-      localStorage.setItem('theme', 'dark');
-      if (sunIcon) sunIcon.style.display = 'none';
-      if (moonIcon) moonIcon.style.display = 'block';
-    } else {
-      localStorage.setItem('theme', 'light');
-      if (sunIcon) sunIcon.style.display = 'block';
-      if (moonIcon) moonIcon.style.display = 'none';
-    }
-});
-  
-// Check for saved theme preference on page load
-document.addEventListener('DOMContentLoaded', () => {
-    const savedTheme = localStorage.getItem('theme');
-    
-    if (savedTheme === 'dark') {
-      document.body.classList.add('dark-mode');
-      
-      // Update the toggle's appearance
-      const sunIcon = themeToggle.querySelector('.sun');
-      const moonIcon = themeToggle.querySelector('.moon');
-      if (sunIcon) sunIcon.style.display = 'none';
-      if (moonIcon) moonIcon.style.display = 'block';
-    }
+    if (sunIcon) sunIcon.style.display = 'none';
+    if (moonIcon) moonIcon.style.display = 'block';
+  }
 });
 
 // FAQ Accordion
