@@ -1,6 +1,9 @@
-import React, {Component} from "react";
-import {render} from "react-dom";
+import React, { Component } from "react";
+import { createRoot } from "react-dom/client";
+
 import HomePage from "./HomePage";
+import UserDash from "./UserDash";
+import Workoutpost from "./Workoutpost";
 
 export default class App extends Component {
     constructor(props) {
@@ -19,7 +22,9 @@ export default class App extends Component {
 }
 
 const appDiv = document.getElementById("app");
-render (<App />, appDiv);
+const root = createRoot(appDiv);
+root.render(<App />);
+
 
 // DOM Elements
 const header = document.querySelector('.header');
@@ -122,22 +127,36 @@ navLinksItems.forEach(link => {
 
 // Dark Mode Toggle
 themeToggle.addEventListener('click', () => {
-  document.body.classList.toggle('dark-mode');
-  
-  // Save preference to localStorage
-  if (document.body.classList.contains('dark-mode')) {
-    localStorage.setItem('theme', 'dark');
-  } else {
-    localStorage.setItem('theme', 'light');
-  }
+    document.body.classList.toggle('dark-mode');
+    
+    // Update the toggle's appearance
+    const sunIcon = themeToggle.querySelector('.sun');
+    const moonIcon = themeToggle.querySelector('.moon');
+    
+    if (document.body.classList.contains('dark-mode')) {
+      localStorage.setItem('theme', 'dark');
+      if (sunIcon) sunIcon.style.display = 'none';
+      if (moonIcon) moonIcon.style.display = 'block';
+    } else {
+      localStorage.setItem('theme', 'light');
+      if (sunIcon) sunIcon.style.display = 'block';
+      if (moonIcon) moonIcon.style.display = 'none';
+    }
 });
-
-// Check for saved theme preference
-window.addEventListener('DOMContentLoaded', () => {
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'dark') {
-    document.body.classList.add('dark-mode');
-  }
+  
+// Check for saved theme preference on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme');
+    
+    if (savedTheme === 'dark') {
+      document.body.classList.add('dark-mode');
+      
+      // Update the toggle's appearance
+      const sunIcon = themeToggle.querySelector('.sun');
+      const moonIcon = themeToggle.querySelector('.moon');
+      if (sunIcon) sunIcon.style.display = 'none';
+      if (moonIcon) moonIcon.style.display = 'block';
+    }
 });
 
 // FAQ Accordion
@@ -207,7 +226,7 @@ if (signupForm) {
     alert(`Thank you, ${name}! Your account has been created. Check your email at ${email} for confirmation.`);
     signupForm.reset();
   });
-}
+};
 
 // Add Animation on Scroll for Feature Cards
 document.addEventListener('DOMContentLoaded', () => {
@@ -219,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if elements are in viewport on page load
   checkElementsInViewport();
 });
+
 
 function checkElementsInViewport() {
   featureCards.forEach(card => {
