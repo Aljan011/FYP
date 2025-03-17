@@ -15,11 +15,14 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
     <link rel="stylesheet" type="text/css" href="{% static 'css/index.css' %}">
+    <script type="module" src="{% static 'frontend/components/Workoutpost.js/components/HomePage.js' %}"></script>
+    <script type="module" src="{% static 'frontend/components/Workoutpost.js' %}"></script>
+
+
   
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="{% static 'frontend/components/App.js' %}"></script>
     <header class="header">
         <nav class="navbar">
           <div class="logo">
@@ -38,7 +41,7 @@
               <span class="sun">☀️</span>
               <span class="moon">🌙</span>
             </button>
-            <a href="#signup" class="btn btn-primary">Sign Up</a>
+            <a href="#signup" class="btn btn-primary">Login</a>
           </div>
           <div class="hamburger" id="hamburger">
             <span></span>
@@ -56,7 +59,7 @@
             <p class="hero-subtitle">Track workouts, connect with trainers, achieve your goals</p>
             <div class="hero-buttons">
               <a href="#features" class="btn btn-primary">Explore Features</a>
-              <a href="#signup" class="btn btn-secondary">Join Now</a>
+              <a href="#signup" class="btn btn-secondary">Login Now</a>
             </div>
           </div>
           <div class="hero-image">
@@ -220,7 +223,7 @@
           </div>
         </section>
   
-        <!-- Signup Section -->
+        <!-- Login Section -->
         <section id="signup" class="signup">
           <div class="container">
             <div class="signup-content">
@@ -236,7 +239,7 @@
                 <div class="form-group">
                   <input type="password" placeholder="Password" required>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                <button type="submit" class="btn btn-primary btn-block">Login</button>
               </form>
             </div>
           </div>
