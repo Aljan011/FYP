@@ -15,10 +15,9 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
     <link rel="stylesheet" type="text/css" href="{% static 'css/workout_track.css' %}">
-    
 </head>
 <body>
-    <div id="app">
+    <div id="app"></div>
     <header class="header">
         <nav class="navbar">
           <div class="logo">
@@ -67,7 +66,16 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
-            <div id="searchResults" class="search-results"></div>
+            <div id="searchResults" class="search-results">
+              <!-- Dynamically render exercises here -->
+              {% for exercise in exercises %}
+                <div class="search-result-item">
+                  <h3>{{ exercise.name }}</h3>
+                  <p>{{ exercise.target }}</p>
+                  <button class="view-exercise-details" data-id="{{ exercise.id }}">View Details</button>
+                </div>
+              {% endfor %}
+            </div>
           </div>
         </section>
   
@@ -143,85 +151,18 @@
                 <div class="stat-label">Exercises</div>
               </div>
               <div class="stat-item">
-                <div class="stat-value" id="totalSets">0</div>
-                <div class="stat-label">Sets</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-value" id="totalReps">0</div>
-                <div class="stat-label">Reps</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-value" id="totalWeight">0</div>
-                <div class="stat-label">Weight (kg)</div>
+                <div class="stat-value" id="totalTime">00:00</div>
+                <div class="stat-label">Duration</div>
               </div>
             </div>
-            
-            <div class="workout-duration">
-              <span class="duration-label">Total Duration:</span>
-              <span id="totalDuration">00:00:00</span>
-            </div>
-            
-            <div class="photo-upload-section">
-              <h3>Capture your progress</h3>
-              <p>Add a photo of your progress (optional)</p>
-              <div class="photo-upload-container">
-                <div id="photoPreview" class="photo-preview">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                  <span>No photo selected</span>
-                </div>
-                <input type="file" id="photoUpload" accept="image/*" class="photo-upload-input">
-                <label for="photoUpload" class="photo-upload-label">Select Photo</label>
-              </div>
-            </div>
-            
-            <div class="modal-actions">
-              <button id="saveWorkoutWithoutPhoto" class="secondary-button">Skip Photo</button>
-              <button id="saveWorkoutWithPhoto" class="primary-button">Save Workout</button>
+            <div class="modal-footer">
+              <button class="modal-btn">Save Summary</button>
+              <button class="modal-btn" id="retryWorkout">Retry Workout</button>
             </div>
           </div>
         </div>
       </div>
-  
-      <!-- Rest Timer Modal -->
-      <div id="restTimerModal" class="modal">
-        <div class="modal-content timer-modal-content">
-          <div class="modal-header">
-            <h2>Rest Timer</h2>
-            <button class="close-modal">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div class="timer-display">
-              <div id="timerValue" class="timer-value">01:00</div>
-            </div>
-            <div class="timer-presets">
-              <button class="timer-preset-btn" data-time="30">30s</button>
-              <button class="timer-preset-btn" data-time="60">1m</button>
-              <button class="timer-preset-btn" data-time="90">1.5m</button>
-              <button class="timer-preset-btn" data-time="120">2m</button>
-              <button class="timer-preset-btn" data-time="180">3m</button>
-            </div>
-            <div class="timer-controls">
-              <button id="startTimer" class="primary-button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                Start
-              </button>
-              <button id="pauseTimer" class="secondary-button" disabled>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                Pause
-              </button>
-              <button id="resetTimer" class="secondary-button" disabled>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"></path><path d="M21 12A9 9 0 0 0 6 5.3L3 8"></path><path d="M21 22v-6h-6"></path><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"></path></svg>
-                Reset
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-  
-      <div id="overlay" class="overlay"></div>
-  
-    </div>
-  
-    <script src="{% static 'frontend/main.js' %}"></script>
+      
+      <script src="{% static 'frontend/main.js' %}"></script>
   </body>
-  </html>
+</html>

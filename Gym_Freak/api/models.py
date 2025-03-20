@@ -25,9 +25,35 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return f"{self.user.username}'s Profile"
+    
+
+class Exercise(models.Model):
+    name = models.CharField(max_length=255)
+    target = models.CharField(max_length=100)
+    difficulty = models.CharField(max_length=100)
+    equipment = models.CharField(max_length=255)
+    description = models.TextField()
+    image_url = models.URLField()
+
+    def __str__(self):
+        return self.name
+    
+
+class Workout(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="workouts")  # Ensure workouts are user-specific
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    exercises = models.ManyToManyField(Exercise)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+
 
 class WorkoutTracking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="workout_tracking")
+    workout = models.ForeignKey(Workout, on_delete=models.CASCADE, related_name="workout_sessions")  # Linking to Workout
     workout_date = models.DateField(auto_now_add=True)
     exercise_name = models.CharField(max_length=255)
     sets = models.PositiveIntegerField()
@@ -40,6 +66,7 @@ class WorkoutTracking(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.exercise_name} on {self.workout_date}"
 
+
 class WorkoutPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="workout_posts")
     workout = models.ForeignKey(WorkoutTracking, on_delete=models.CASCADE, null=True, blank=True)
@@ -49,6 +76,7 @@ class WorkoutPost(models.Model):
     def __str__(self):
         return f"Post by {self.user.username} on {self.created_at.date()}"
 
+
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(WorkoutPost, on_delete=models.CASCADE, related_name="likes")
@@ -56,6 +84,7 @@ class Like(models.Model):
 
     def __str__(self):
         return f"{self.user.username} liked post {self.post.id}"
+
 
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -66,6 +95,7 @@ class Comment(models.Model):
     def __str__(self):
         return f"{self.user.username} commented on post {self.post.id}"
 
+
 class Share(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(WorkoutPost, on_delete=models.CASCADE, related_name="shares")
@@ -73,6 +103,7 @@ class Share(models.Model):
 
     def __str__(self):
         return f"{self.user.username} shared post {self.post.id}"
+
 
 class DietPlan(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="diet_plans", null=True, blank=True)  # Null if it's a general diet plan
@@ -85,6 +116,7 @@ class DietPlan(models.Model):
     def __str__(self):
         return f"{self.name} ({'Custom' if self.is_custom else 'General'})"
     
+
 class ChatMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")

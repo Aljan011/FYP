@@ -7,11 +7,23 @@ from rest_framework import status
 
 from rest_framework import generics, status, permissions
 from django.db import models
-from .serializers import UserProfileSerializer, WorkoutTrackingSerializer, WorkoutPostSerializer, DietPlanSerializer, ChatMessageSerializer
-from .models import UserProfile, WorkoutTracking, WorkoutPost, DietPlan, ChatMessage
+from .serializers import UserProfileSerializer, DietPlanSerializer, ChatMessageSerializer, WorkoutSerializer
+from .models import UserProfile, WorkoutTracking, WorkoutPost, DietPlan, ChatMessage, Exercise, Workout
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
+class WorkoutCreateView(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        workout = Workout.objects.create(
+            title=data['title'],
+            description=data['description']
+        )
+        exercises = Exercise.objects.filter(id__in=data['exercises'])
+        workout.exercises.set(exercises)
+        workout.save()
+        return Response({"message": "Workout created successfully!"}, status=status.HTTP_201_CREATED)
 
 class LoginView(APIView):
     def post(self, request):
@@ -31,14 +43,14 @@ class RoomView(generics.ListAPIView):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
-# View for listing and creating WorkoutTracking entries
-class WorkoutTrackingListCreateView(generics.ListCreateAPIView):
-    queryset = WorkoutTracking.objects.all()
-    serializer_class = WorkoutTrackingSerializer
+# # View for listing and creating WorkoutTracking entries
+# class WorkoutTrackingListCreateView(generics.ListCreateAPIView):
+#     queryset = WorkoutTracking.objects.all()
+#     serializer_class = WorkoutTrackingSerializer
 
-class WorkoutPostListCreateView(generics.ListCreateAPIView):
-    queryset = WorkoutPost.objects.all()
-    serializer_class = WorkoutPostSerializer
+# class WorkoutPostListCreateView(generics.ListCreateAPIView):
+#     queryset = WorkoutPost.objects.all()
+#     serializer_class = WorkoutPostSerializer
 
 # Retrieve all diet plans (general and user-specific)
 class DietPlanListCreateView(generics.ListCreateAPIView):

@@ -9,7 +9,7 @@ console.log('moteyuyyyyy')
 const root = ReactDOM.createRoot(document.getElementById("app"));
 
 root.render(
-  // <BrowserRouter>
+  <BrowserRouter>
     <App />
-  // </BrowserRouter>
+  </BrowserRouter>
 );

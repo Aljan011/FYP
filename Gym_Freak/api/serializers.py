@@ -1,18 +1,23 @@
 from rest_framework import serializers
-from .models import UserProfile, WorkoutTracking, WorkoutPost, Like, Comment, Share, DietPlan, ChatMessage
+from .models import UserProfile, WorkoutTracking, WorkoutPost, Like, Comment, Share, DietPlan, ChatMessage, Workout
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = '__all__'
 
-class WorkoutTrackingSerializer(serializers.ModelSerializer):
+class WorkoutSerializer(serializers.ModelSerializer):
     class Meta:
-        model = WorkoutTracking
-        fields = '__all__'
+        model = Workout
+        fields = ['title', 'description', 'exercises']       
 
-class WorkoutPostSerializer(serializers.ModelSerializer):
-    workout = WorkoutTrackingSerializer(read_only=True)  # Nested serializer to show workout details
+# class WorkoutTrackingSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = WorkoutTracking
+#         fields = '__all__'
+
+# class WorkoutPostSerializer(serializers.ModelSerializer):
+#     workout = WorkoutTrackingSerializer(read_only=True)  # Nested serializer to show workout details
 
     class Meta:
         model = WorkoutPost

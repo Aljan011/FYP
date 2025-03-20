@@ -1,8 +1,8 @@
 from django.urls import path
-from .views import index
+from .views import index, workout_view
 
 urlpatterns = [
     path ('', index),
-    path('user', index),
-    path('workout/', index, name='workout_tracking'),
+    path('user', index, name = 'user'),
+    path('workout/', workout_view, name='workout_tracking'),
 ]
