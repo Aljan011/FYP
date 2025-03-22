@@ -1,14 +1,33 @@
 from django.urls import path
-from .views import RoomView, DietPlanListCreateView, DietPlanDetailView, ChatMessageListView, SendMessageView, LoginView, WorkoutCreateView  # Import the correct view
+from .views import (
+    DietPlanListCreateView, DietPlanDetailView, 
+    ChatMessageListView, SendMessageView, LoginView, 
+    WorkoutPostDetailView, WorkoutPostListCreateView, 
+    WorkoutTrackingDetailView, WorkoutTrackingListCreateView, 
+    get_exercises
+)
 
 urlpatterns = [
-    path('room', RoomView.as_view()),
-    # path('workouts/', WorkoutTrackingListCreateView.as_view(), name='workout-tracking-list'), 
-    # path('workout-posts/', WorkoutPostListCreateView.as_view(), name='workout-post-list'), 
+    # API routes (no extra 'api/')
     path('dietplans/', DietPlanListCreateView.as_view(), name="dietplan-list"),
     path('dietplans/<int:pk>/', DietPlanDetailView.as_view(), name="dietplan-detail"),
+    
+    # Chat
     path('chat/<int:user_id>/', ChatMessageListView.as_view(), name='chat-messages'),
     path('chat/send/', SendMessageView.as_view(), name='send-message'),
+    
+    # Authentication
     path('login/', LoginView.as_view(), name='login'),  
-     path('api/workouts', WorkoutCreateView.as_view(), name='create_workout'),
+
+    # Exercises
+    # path("exercises/", get_exercises, name="get_exercises"),
+    path('get_exercises/', get_exercises, name='get_exercises'),
+
+    # Workout Tracking
+    path("workouts/", WorkoutTrackingListCreateView.as_view(), name="workout-list"),
+    path("workouts/<int:pk>/", WorkoutTrackingDetailView.as_view(), name="workout-detail"),
+
+    # Workout Posts
+    path("posts/", WorkoutPostListCreateView.as_view(), name="workout-posts"),
+    path("posts/<int:pk>/", WorkoutPostDetailView.as_view(), name="workout-post-detail"),
 ]

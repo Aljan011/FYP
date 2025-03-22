@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.db import models
 import string
 import random
+from django.conf import settings
 from django.utils.timezone import now
 
 
@@ -9,9 +10,10 @@ def generate_unique_code():
     length = 6
     while True:
         code = ''.join(random.choices(string.ascii_uppercase, k=length))
-        if User.objects.filter(username=code).count() == 0:
+        if not User.objects.filter(username=code).exists():
             break
     return code
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
@@ -22,10 +24,10 @@ class UserProfile(models.Model):
     address = models.TextField(blank=True, null=True)
     favorite_exercises = models.TextField(blank=True, null=True)
     preferred_diet_plan = models.TextField(blank=True, null=True)
-    
+
     def __str__(self):
         return f"{self.user.username}'s Profile"
-    
+
 
 class Exercise(models.Model):
     name = models.CharField(max_length=255)
@@ -37,13 +39,21 @@ class Exercise(models.Model):
 
     def __str__(self):
         return self.name
-    
+
 
 class Workout(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="workouts")  # Ensure workouts are user-specific
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='workouts')
     title = models.CharField(max_length=200)
-    description = models.TextField()
-    exercises = models.ManyToManyField(Exercise)
+    description = models.TextField(blank=True, null=True)
+    exercises = models.ManyToManyField(Exercise, related_name='workouts')
+    duration = models.DurationField(blank=True, null=True)
+    calories_burned = models.PositiveIntegerField(blank=True, null=True)
+    intensity = models.CharField(max_length=10, choices=[('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High')], default='Medium')
+    sets = models.JSONField(default=list)
+    rest_time = models.DurationField(blank=True, null=True)
+    personal_best = models.JSONField(default=dict)
+    notes = models.TextField(blank=True, null=True)
+    progress_pictures = models.ImageField(upload_to="progress_pics/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -52,19 +62,18 @@ class Workout(models.Model):
 
 
 class WorkoutTracking(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="workout_tracking")
-    workout = models.ForeignKey(Workout, on_delete=models.CASCADE, related_name="workout_sessions")  # Linking to Workout
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='workout_tracking')
+    workout = models.ForeignKey(Workout, on_delete=models.CASCADE, related_name='sessions')
     workout_date = models.DateField(auto_now_add=True)
-    exercise_name = models.CharField(max_length=255)
-    sets = models.PositiveIntegerField()
-    reps = models.PositiveIntegerField()
-    duration = models.DurationField(blank=True, null=True)  # Optional for time-based workouts
+    exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name='workout_sessions', null=True, blank=True)
+    sets = models.JSONField(default=list)
+    rest_time = models.DurationField(blank=True, null=True)
     calories_burned = models.PositiveIntegerField(blank=True, null=True)
     workout_notes = models.TextField(blank=True, null=True)
-    workout_image = models.ImageField(upload_to='workout_images/', blank=True, null=True)
+    workout_image = models.ImageField(blank=True, null=True, upload_to='workout_images/')
 
     def __str__(self):
-        return f"{self.user.username} - {self.exercise_name} on {self.workout_date}"
+        return f"Workout on {self.workout_date} by {self.user.username}"
 
 
 class WorkoutPost(models.Model):
@@ -106,16 +115,16 @@ class Share(models.Model):
 
 
 class DietPlan(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="diet_plans", null=True, blank=True)  # Null if it's a general diet plan
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="diet_plans", null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField()
-    meals = models.JSONField()  # Store meals as JSON (e.g., {"Breakfast": "Oatmeal", "Lunch": "Grilled Chicken", ...})
-    is_custom = models.BooleanField(default=False)  # True if created by the user
+    meals = models.JSONField()
+    is_custom = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.name} ({'Custom' if self.is_custom else 'General'})"
-    
+
 
 class ChatMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")

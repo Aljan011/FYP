@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Freak - Transform your Fitness Journey</title>
+    <title>Gym Freak - Log Your Workout</title>
     <meta name="description" content="GymFreak - Track workouts, connect with trainers, and achieve your fitness goals" />
     <meta name="author" content="GymFreak" />
     <meta property="og:image" content="/og-image.png" />
@@ -25,18 +25,18 @@
           </div>
           <div class="nav-links" id="navLinks">
             <ul>
-              <li><a href="#home" class="nav-link">Home</a></li>
-              <li><a href="#about" class="nav-link">About</a></li>
-              <li><a href="#features" class="nav-link">Features</a></li>
-              <li><a href="#faq" class="nav-link">FAQ</a></li>
-            </ul>
-          </div>
-          <div class="nav-buttons">
-            <button class="theme-toggle" id="themeToggle">
-              <span class="sun">☀️</span>
-              <span class="moon">🌙</span>
-            </button>
-            <a href="#signup" class="btn btn-primary">Login</a>
+                <li><a href="#home" class="nav-link">Home</a></li>
+                <li><a href="#about" class="nav-link">Track</a></li>
+                <li><a href="#features" class="nav-link">Diets</a></li>
+                <li><a href="#faq" class="nav-link">Chat</a></li>
+              </ul>
+            </div>
+            <div class="nav-buttons">
+              <button class="theme-toggle" id="themeToggle">
+                <span class="sun">☀️</span>
+                <span class="moon">🌙</span>
+              </button>
+              {% comment %} <a href="#signup" class="btn btn-primary">Login</a> {% endcomment %}
           </div>
           <div class="hamburger" id="hamburger">
             <span></span>
@@ -44,124 +44,107 @@
             <span></span>
           </div>
         </nav>
-      </header>
-  
-      <div class="workout-session-container">
+    </header>
+
+    <!-- Workout Form Section -->
+    {% comment %} <div class="workout-form-container">
+        <h2>Log Your Workout</h2>
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" value="Log Workout">
+        </form>
+    </div> {% endcomment %}
+
+    <div class="workout-session-container">
         <div class="session-header">
-          <span class="small-chip">Current Session</span>
-          <h2>Today's Workout</h2>
-          <div class="session-timer">
-            <span class="timer-label">Session Time:</span>
-            <span id="sessionTime">00:00:00</span>
-          </div>
+            <span class="small-chip">Current Session</span>
+            <h2>Today's Workout</h2>
+            <div class="session-timer">
+                <span class="timer-label">Session Time:</span>
+                <span id="sessionTime">00:00:00</span>
+            </div>
         </div>
   
         <!-- Exercise Search Section -->
         <section class="search-section">
-          <div class="search-container">
-            <div class="search-input-wrapper">
-              <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input type="text" id="exerciseSearch" class="search-input" placeholder="Search for an exercise...">
-              <button id="clearSearch" class="clear-search-btn" aria-label="Clear search">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
-            </div>
-            <div id="searchResults" class="search-results">
-              <!-- Dynamically render exercises here -->
-              {% for exercise in exercises %}
-                <div class="search-result-item">
-                  <h3>{{ exercise.name }}</h3>
-                  <p>{{ exercise.target }}</p>
-                  <button class="view-exercise-details" data-id="{{ exercise.id }}">View Details</button>
+            <div class="search-container">
+                <div class="search-input-wrapper">
+                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="exerciseSearch" class="search-input" placeholder="Search for an exercise...">
+                    <button id="clearSearch" class="clear-search-btn" aria-label="Clear search">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
                 </div>
-              {% endfor %}
+                <div id="searchResults" class="search-results">
+                    <!-- Dynamically render exercises here -->
+                    {% for exercise in exercises %}
+                    <div class="search-result-item">
+                        <h3>{{ Exercise.name }}</h3>
+                        <p>{{ Exercise.target }}</p>
+                        <button class="view-exercise-details" data-id="{{ Exercise.id }}">View Details</button>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
-          </div>
         </section>
-  
+
         <!-- Selected Exercise Details Section -->
         <section id="exerciseDetailsSection" class="exercise-details-section hidden">
-          <div class="exercise-details-container">
-            <div class="exercise-image-container">
-              <div class="exercise-image-wrapper">
-                <img id="exerciseImage" src="" alt="Exercise demonstration" class="exercise-image">
-              </div>
+            <div class="exercise-details-container">
+                <div class="exercise-image-container">
+                    <div class="exercise-image-wrapper">
+                        <img id="exerciseImage" src="" alt="Exercise demonstration" class="exercise-image">
+                    </div>
+                </div>
+                <div class="exercise-info">
+                    <h3 id="exerciseName" class="exercise-name"></h3>
+                    <div class="exercise-specs">
+                        <div class="spec-item">
+                            <span class="spec-label">Target</span>
+                            <span id="targetMuscle" class="spec-value"></span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Difficulty</span>
+                            <span id="difficultyLevel" class="spec-value"></span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Equipment</span>
+                            <span id="equipmentNeeded" class="spec-value"></span>
+                        </div>
+                    </div>
+                    <p id="exerciseDescription" class="exercise-description"></p>
+                    <button id="addToWorkout" class="primary-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        Add to Workout
+                    </button>
+                </div>
             </div>
-            <div class="exercise-info">
-              <h3 id="exerciseName" class="exercise-name"></h3>
-              <div class="exercise-specs">
-                <div class="spec-item">
-                  <span class="spec-label">Target</span>
-                  <span id="targetMuscle" class="spec-value"></span>
-                </div>
-                <div class="spec-item">
-                  <span class="spec-label">Difficulty</span>
-                  <span id="difficultyLevel" class="spec-value"></span>
-                </div>
-                <div class="spec-item">
-                  <span class="spec-label">Equipment</span>
-                  <span id="equipmentNeeded" class="spec-value"></span>
-                </div>
-              </div>
-              <p id="exerciseDescription" class="exercise-description"></p>
-              <button id="addToWorkout" class="primary-button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Add to Workout
-              </button>
-            </div>
-          </div>
         </section>
   
         <!-- Current Workout Section -->
         <section class="current-workout-section">
-          <div class="section-header">
-            <h3>Current Workout</h3>
-            <div id="progressContainer" class="progress-container hidden">
-              <div class="progress-bar-container">
-                <div id="progressBar" class="progress-bar" style="width: 0%"></div>
-              </div>
-              <button id="finishWorkout" class="finish-workout-button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                Finish Workout
-              </button>
+            <div class="section-header">
+                <h3>Current Workout</h3>
+                <div id="progressContainer" class="progress-container hidden">
+                    <div class="progress-bar-container">
+                        <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <button id="finishWorkout" class="finish-workout-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Finish Workout
+                    </button>
+                </div>
             </div>
-          </div>
           
-          <div id="workoutExercises" class="workout-exercises">
-            <div id="emptyWorkoutMessage" class="empty-workout-message">
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-              <p>Your workout is empty. Search for exercises to add them to your workout.</p>
+            <div id="workoutExercises" class="workout-exercises">
+                <div id="emptyWorkoutMessage" class="empty-workout-message">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <p>Your workout is empty. Search for exercises to add them to your session.</p>
+                </div>
             </div>
-          </div>
         </section>
-      </div>
-  
-      <!-- Workout Summary Modal -->
-      <div id="workoutSummaryModal" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <span class="small-chip">Completed</span>
-            <h2>Workout Summary</h2>
-            <button class="close-modal">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div class="summary-stats">
-              <div class="stat-item">
-                <div class="stat-value" id="totalExercises">0</div>
-                <div class="stat-label">Exercises</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-value" id="totalTime">00:00</div>
-                <div class="stat-label">Duration</div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button class="modal-btn">Save Summary</button>
-              <button class="modal-btn" id="retryWorkout">Retry Workout</button>
-            </div>
-          </div>
-        </div>
-      </div>
+    </div>
       
       <script src="{% static 'frontend/main.js' %}"></script>
   </body>

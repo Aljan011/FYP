@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserProfile, WorkoutTracking, WorkoutPost, Like, Comment, Share, DietPlan, ChatMessage, Workout
+from .models import UserProfile, WorkoutTracking, WorkoutPost, Like, Comment, Share, DietPlan, ChatMessage, Workout, Exercise
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -11,13 +11,18 @@ class WorkoutSerializer(serializers.ModelSerializer):
         model = Workout
         fields = ['title', 'description', 'exercises']       
 
-# class WorkoutTrackingSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = WorkoutTracking
-#         fields = '__all__'
+class WorkoutTrackingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkoutTracking
+        fields = '__all__'
 
-# class WorkoutPostSerializer(serializers.ModelSerializer):
-#     workout = WorkoutTrackingSerializer(read_only=True)  # Nested serializer to show workout details
+class ExerciseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exercise
+        fields = '__all__'
+
+class WorkoutPostSerializer(serializers.ModelSerializer):
+    workout = WorkoutTrackingSerializer(read_only=True)  # Nested serializer to show workout details
 
     class Meta:
         model = WorkoutPost

@@ -6,3 +6,6 @@ def index(request, *args, **kwargs):
 
 def workout_view(request, *args, **kwargs):
     return render(request, 'frontend/workout_track.html')
+
+def diet_plan_view(request):
+    return render(request, 'frontend/DietPlan.html') 
