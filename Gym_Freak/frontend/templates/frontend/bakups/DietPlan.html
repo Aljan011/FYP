@@ -1,4 +1,4 @@
-
+{% comment %} 
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,7 +36,7 @@
               <span class="sun">☀️</span>
               <span class="moon">🌙</span>
             </button>
-            {% comment %} <a href="#signup" class="btn btn-primary">Login</a> {% endcomment %}
+            
           </div>
           <div class="hamburger" id="hamburger">
             <span></span>
@@ -214,7 +214,59 @@
       </div>
     </section>
     
-   
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="testimonials">
+      <div class="container">
+        <div class="section-header">
+          <span class="badge">Success Stories</span>
+          <h2>Transformations That Inspire</h2>
+        </div>
+        
+        <div class="testimonials-grid">
+          <div class="testimonial-card">
+            <div class="testimonial-header">
+              <div class="testimonial-avatar">JS</div>
+              <div class="testimonial-author">
+                <h4>Jessica S.</h4>
+                <p>Weight Loss Plan</p>
+              </div>
+            </div>
+            <p class="testimonial-text">"I've tried so many diet plans before, but this is the first one that's actually sustainable. I've lost 24 lbs in 3 months and I don't feel like I'm missing out on food I love."</p>
+            <div class="testimonial-rating">
+              <div class="stars">
+                <span>★</span>
+                <span>★</span>
+                <span>★</span>
+                <span>★</span>
+                <span>★</span>
+              </div>
+              <span class="rating-date">3 months ago</span>
+            </div>
+          </div>
+          
+          <div class="testimonial-card">
+            <div class="testimonial-header">
+              <div class="testimonial-avatar">MT</div>
+              <div class="testimonial-author">
+                <h4>Michael T.</h4>
+                <p>Muscle Building Plan</p>
+              </div>
+            </div>
+            <p class="testimonial-text">"The muscle building plan has been a game changer for me. The timed nutrition has helped me maximize my workouts and I've seen more progress in 2 months than I did all last year."</p>
+            <div class="testimonial-rating">
+              <div class="stars">
+                <span>★</span>
+                <span>★</span>
+                <span>★</span>
+                <span>★</span>
+                <span>★</span>
+              </div>
+              <span class="rating-date">1 month ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
     
     <!-- CTA Section -->
     <section class="cta">
@@ -292,4 +344,4 @@
   
   <script src="{% static 'frontend/main.js' %}"></script>
 </body>
-</html>
+</html>  {% endcomment %}

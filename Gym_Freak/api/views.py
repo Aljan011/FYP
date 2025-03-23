@@ -21,7 +21,28 @@ from .serializers import DietPlanSerializer, WorkoutTrackingSerializer, WorkoutP
 
 class LoginView(APIView):
     def post(self, request):
-        return Response({"message": "Login successful!"})
+        print('hrllo')
+        data = request.data
+        username = data.get('username');
+        password = data.get('password');
+        response = [username, password];
+
+        isValidCredential = False;
+
+        if username == 'aljan' and password == 'chatake':
+            isValidCredential = True;
+        
+        if isValidCredential == True:
+            response = {
+                'message': 'Login Successful',
+                'status': 200
+            }
+        else:
+            response = {
+                'message': 'Invalid Credentials',
+                'status': 401
+            }
+        return Response(response);
 
 
 class DietPlanListCreateView(ListCreateAPIView):
@@ -73,6 +94,11 @@ def get_exercises(request):
 
     exercise_list = list(exercises.values("id", "name", "target", "description", "equipment", "image_url"))
     return JsonResponse(exercise_list, safe=False)
+
+@api_view(['GET'])
+def echo(request):
+    return JsonResponse(['Hello world this is api'], safe=False)
+
 
 
 class WorkoutPostListCreateView(ListCreateAPIView):

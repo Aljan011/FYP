@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "webpack --mode development --watch",
     "serve": "webpack serve --port 3001 --mode development",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production --watch"
   },
   "keywords": [],
   "author": "",

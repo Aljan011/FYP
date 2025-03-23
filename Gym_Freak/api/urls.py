@@ -4,11 +4,14 @@ from .views import (
     ChatMessageListView, SendMessageView, LoginView, 
     WorkoutPostDetailView, WorkoutPostListCreateView, 
     WorkoutTrackingDetailView, WorkoutTrackingListCreateView, 
-    get_exercises
+    get_exercises,
+    echo,
 )
 
 urlpatterns = [
     # API routes (no extra 'api/')
+    path('', echo, name='echo'),
+    
     path('dietplans/', DietPlanListCreateView.as_view(), name="dietplan-list"),
     path('dietplans/<int:pk>/', DietPlanDetailView.as_view(), name="dietplan-detail"),
     
@@ -22,6 +25,7 @@ urlpatterns = [
     # Exercises
     # path("exercises/", get_exercises, name="get_exercises"),
     path('get_exercises/', get_exercises, name='get_exercises'),
+
 
     # Workout Tracking
     path("workouts/", WorkoutTrackingListCreateView.as_view(), name="workout-list"),

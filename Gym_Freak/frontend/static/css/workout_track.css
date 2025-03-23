@@ -1,4 +1,3 @@
-
 /* Base Styles and Variables */
 :root {
   --primary-color: #1E1E1E;
@@ -27,253 +26,278 @@
   --shadow-md: 0 4px 16px var(--shadow-color);
   --shadow-lg: 0 8px 24px var(--shadow-color);
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --max-width: 1200px;
+  --transition: 0.3s ease;
 }
 
-  /* Dark Mode Variables */
-  .dark-mode {
-    --primary-color: #4299e1;
-    --secondary-color: #4fd1c5;
-    --dark-color: #f7fafc;
-    --light-color: #1a202c;
-    --text-color: #e2e8f0;
-    --text-dark: #f7fafc;
-    --text-light: #718096;
-    --border-color: #2d3748;
-  }
-  
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  
-  html {
-    scroll-behavior: smooth;
-    font-size: 16px;
-  }
-  
-  body {
-    font-family: 'Inter', sans-serif;
-    line-height: 1.6;
-    color: var(--text-color);
-    background-color: var(--light-color);
-    overflow-x: hidden;
-    transition: var(--transition);
-  }
-  
-  a {
-    text-decoration: none;
-    color: var(--primary-color);
-    transition: var(--transition);
-  }
-  
-  a:hover {
-    color: darken(var(--primary-color), 10%);
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--text-dark);
-    font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 1rem;
-  }
-  
-  p {
-    margin-bottom: 1rem;
-  }
-  
-  img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-  }
-  
-  ul {
-    list-style: none;
-  }
-  
-  .container {
-    width: 100%;
-    max-width: var(--max-width);
-    margin: 0 auto;
-    padding: 0 2rem;
-  }
-  
-  section {
-    padding: 5rem 0;
-  }
-  
-  .section-title {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-  
-  .section-description {
-    font-size: 1.2rem;
-    text-align: center;
-    max-width: 800px;
-    margin: 0 auto 3rem;
-    color: var(--text-light);
-  }
-  
-  .section-header {
-    margin-bottom: 3rem;
-  }
-  
-  /* Buttons */
-  .btn {
-    display: inline-block;
-    padding: 0.8rem 1.5rem;
-    border-radius: var(--radius);
-    font-weight: 600;
-    text-align: center;
-    transition: var(--transition);
-    cursor: pointer;
-    border: none;
-  }
-  
-  .btn-primary {
-    background-color: var(--primary-color);
-    color: white;
-  }
-  
-  .btn-primary:hover {
-    background-color: darken(var(--primary-color), 10%);
-    transform: translateY(-3px);
-    box-shadow: var(--shadow);
-  }
-  
-  .btn-secondary {
-    background-color: transparent;
-    color: var(--primary-color);
-    border: 2px solid var(--primary-color);
-  }
-  
-  .btn-secondary:hover {
-    background-color: var(--primary-color);
-    color: white;
-    transform: translateY(-3px);
-    box-shadow: var(--shadow);
-  }
-  
-  .btn-block {
-    display: block;
-    width: 100%;
-  }
-  
-  /* Header & Navigation */
-  .header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 1000;
-    padding: 1rem 0;
-    background-color: rgba(255, 255, 255, 0.95);
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition);
-  }
-  
-  .header.scrolled {
-    padding: 0.5rem 0;
-    box-shadow: var(--shadow);
-  }
-  
-  .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 2rem;
-    max-width: var(--max-width);
-    margin: 0 auto;
-  }
-  
-  .logo h1 {
-    font-size: 1.8rem;
-    margin-bottom: 0;
-  }
-  
-  .nav-links ul {
-    display: flex;
-    gap: 2rem;
-  }
-  
-  .nav-link {
-    position: relative;
-    color: var(--text-dark);
-    font-weight: 500;
-  }
-  
-  .nav-link::after {
-    content: '';
-    position: absolute;
-    bottom: -5px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background-color: var(--primary-color);
-    transition: var(--transition);
-  }
-  
-  .nav-link:hover {
-    color: var(--primary-color);
-  }
-  
-  .nav-link:hover::after {
-    width: 100%;
-  }
-  
-  .nav-buttons {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-  
-  .theme-toggle {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .theme-toggle .moon {
-    display: none;
-  }
-  
-  .dark-mode .theme-toggle .sun {
-    display: none;
-  }
-  
-  .dark-mode .theme-toggle .moon {
-    display: block;
-  }
-  
-  .hamburger {
-    display: none;
-    flex-direction: column;
-    cursor: pointer;
-  }
-  
-  .hamburger span {
-    display: block;
-    width: 25px;
-    height: 3px;
-    margin-bottom: 5px;
-    position: relative;
-    background-color: var(--text-dark);
-    border-radius: 3px;
-    transition: var(--transition);
-  }
+/* Dark Mode Variables */
+.dark-mode {
+  --primary-color: #4299e1;
+  --secondary-color: #4fd1c5;
+  --accent-color: #4299e1;
+  --text-primary: #f7fafc;
+  --text-secondary: #cbd5e0;
+  --text-tertiary: #a0aec0;
+  --background-primary: #1a202c;
+  --background-secondary: #2d3748;
+  --surface-primary: #2d3748;
+  --surface-secondary: #3a4757;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --success-color: #48bb78;
+  --danger-color: #f56565;
+  --warning-color: #ed8936;
+  --info-color: #38b2ac;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-family);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--background-primary);
+  overflow-x: hidden;
+  transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+a {
+  text-decoration: none;
+  color: var(--accent-color);
+  transition: var(--transition-speed);
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  transition: color var(--transition-speed);
+}
+
+p {
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+ul {
+  list-style: none;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+section {
+  padding: 5rem 0;
+}
+
+.section-title {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
+}
+
+.section-description {
+  font-size: 1.2rem;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto 3rem;
+  color: var(--text-secondary);
+  transition: color var(--transition-speed);
+}
+
+.section-header {
+  margin-bottom: 3rem;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 0.8rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  text-align: center;
+  transition: var(--transition-speed);
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-color);
+  opacity: 0.9;
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--accent-color);
+  border: 2px solid var(--accent-color);
+  transition: background-color var(--transition-speed), color var(--transition-speed);
+}
+
+.btn-secondary:hover {
+  background-color: var(--accent-color);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-block {
+  display: block;
+  width: 100%;
+}
+
+/* Header & Navigation */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  padding: 1rem 0;
+  background-color: var(--surface-primary);
+  box-shadow: var(--shadow-sm);
+  transition: padding var(--transition-speed), background-color var(--transition-speed);
+}
+
+.header.scrolled {
+  padding: 0.5rem 0;
+  box-shadow: var(--shadow-md);
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.logo h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
+}
+
+.nav-links ul {
+  display: flex;
+  gap: 2rem;
+}
+
+.nav-link {
+  position: relative;
+  color: var(--text-primary);
+  font-weight: 500;
+  transition: color var(--transition-speed);
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--accent-color);
+  transition: var(--transition-speed);
+}
+
+.nav-link:hover {
+  color: var(--accent-color);
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
+}
+
+.theme-toggle .moon {
+  display: none;
+}
+
+.dark-mode .theme-toggle .sun {
+  display: none;
+}
+
+.dark-mode .theme-toggle .moon {
+  display: block;
+}
+
+.hamburger {
+  display: none;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.hamburger span {
+  display: block;
+  width: 25px;
+  height: 3px;
+  margin-bottom: 5px;
+  position: relative;
+  background-color: var(--text-primary);
+  border-radius: 3px;
+  transition: var(--transition-speed);
+}
 
 /* Session Header */
 .workout-session-container {
   padding: 20px;
   margin-bottom: 40px;
   padding-top: 90px;
+  background-color: var(--background-primary);
+  transition: background-color var(--transition-speed);
 }
 
 .session-header {
@@ -292,6 +316,7 @@
   margin-bottom: 8px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  transition: background-color var(--transition-speed);
 }
 
 .session-header h2 {
@@ -299,11 +324,14 @@
   font-weight: 700;
   margin-bottom: 10px;
   letter-spacing: -0.5px;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .session-timer {
   font-size: 1rem;
   color: var(--text-secondary);
+  transition: color var(--transition-speed);
 }
 
 /* Search Section */
@@ -328,6 +356,7 @@
   position: absolute;
   left: 16px;
   color: var(--text-tertiary);
+  transition: color var(--transition-speed);
 }
 
 .search-input {
@@ -339,7 +368,7 @@
   background-color: var(--surface-primary);
   color: var(--text-primary);
   outline: none;
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition: box-shadow 0.2s, border-color 0.2s, background-color var(--transition-speed), color var(--transition-speed);
 }
 
 .search-input:focus {
@@ -355,7 +384,7 @@
   color: var(--text-tertiary);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, color var(--transition-speed);
 }
 
 .search-input:not(:placeholder-shown) + .clear-search-btn {
@@ -375,6 +404,7 @@
   overflow-y: auto;
   z-index: 100;
   display: none;
+  transition: background-color var(--transition-speed);
 }
 
 .search-results.active {
@@ -397,11 +427,14 @@
 
 .exercise-result-name {
   font-weight: 500;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .exercise-result-target {
   font-size: 0.875rem;
   color: var(--text-tertiary);
+  transition: color var(--transition-speed);
 }
 
 /* Exercise Details Section */
@@ -412,7 +445,7 @@
   border: 1px solid var(--border-color);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition: transform 0.3s, box-shadow 0.3s, background-color var(--transition-speed), border-color var(--transition-speed);
 }
 
 .exercise-details-section.hidden {
@@ -436,6 +469,7 @@
   position: relative;
   background-color: var(--background-secondary);
   overflow: hidden;
+  transition: background-color var(--transition-speed);
 }
 
 .exercise-image-wrapper {
@@ -469,6 +503,7 @@
   font-weight: 700;
   margin-bottom: 16px;
   color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .exercise-specs {
@@ -490,17 +525,20 @@
   letter-spacing: 0.5px;
   color: var(--text-tertiary);
   margin-bottom: 4px;
+  transition: color var(--transition-speed);
 }
 
 .spec-value {
   font-weight: 600;
   color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .exercise-description {
   color: var(--text-secondary);
   margin-bottom: 24px;
   line-height: 1.6;
+  transition: color var(--transition-speed);
 }
 
 .primary-button {
@@ -515,11 +553,12 @@
   border-radius: var(--radius-md);
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
+  transition: background-color 0.2s, transform 0.2s, opacity 0.2s;
 }
 
 .primary-button:hover {
-  background-color: rgba(0, 122, 255, 0.9);
+  background-color: var(--accent-color);
+  opacity: 0.9;
   transform: translateY(-2px);
 }
 
@@ -542,6 +581,8 @@
 .section-header h3 {
   font-size: 1.5rem;
   font-weight: 700;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .progress-container {
@@ -560,13 +601,14 @@
   background-color: var(--surface-secondary);
   border-radius: 100px;
   overflow: hidden;
+  transition: background-color var(--transition-speed);
 }
 
 .progress-bar {
   height: 100%;
   background-color: var(--accent-color);
   border-radius: 100px;
-  transition: width 0.3s ease-in-out;
+  transition: width 0.3s ease-in-out, background-color var(--transition-speed);
 }
 
 .finish-workout-button {
@@ -581,11 +623,12 @@
   border-radius: var(--radius-md);
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
+  transition: background-color 0.2s, transform 0.2s, opacity 0.2s;
 }
 
 .finish-workout-button:hover {
-  background-color: rgba(52, 199, 89, 0.9);
+  background-color: var(--success-color);
+  opacity: 0.9;
   transform: translateY(-2px);
 }
 
@@ -599,16 +642,19 @@
   background-color: var(--surface-primary);
   border-radius: var(--radius-lg);
   border: 1px dashed var(--border-color);
+  transition: background-color var(--transition-speed), border-color var(--transition-speed);
 }
 
 .empty-workout-message svg {
   color: var(--text-tertiary);
   margin-bottom: 16px;
+  transition: color var(--transition-speed);
 }
 
 .empty-workout-message p {
   color: var(--text-secondary);
   max-width: 300px;
+  transition: color var(--transition-speed);
 }
 
 .workout-exercises {
@@ -622,7 +668,7 @@
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
   overflow: hidden;
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition: transform 0.3s, box-shadow 0.3s, background-color var(--transition-speed), border-color var(--transition-speed);
 }
 
 .workout-exercise-item:hover {
@@ -637,6 +683,7 @@
   padding: 16px 20px;
   cursor: pointer;
   border-bottom: 1px solid var(--border-color);
+  transition: border-color var(--transition-speed);
 }
 
 .exercise-header-info {
@@ -653,15 +700,19 @@
   align-items: center;
   justify-content: center;
   background-color: var(--surface-secondary);
+  transition: background-color var(--transition-speed);
 }
 
 .exercise-header-name {
   font-weight: 600;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .exercise-header-details {
   font-size: 0.875rem;
   color: var(--text-tertiary);
+  transition: color var(--transition-speed);
 }
 
 .exercise-actions {
@@ -692,6 +743,7 @@
 .exercise-content {
   padding: 20px;
   border-bottom: 1px solid var(--border-color);
+  transition: border-color var(--transition-speed);
 }
 
 .sets-header {
@@ -704,11 +756,15 @@
 .set-number {
   width: 40px;
   font-weight: 600;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .weight-label, .reps-label {
   flex: 1;
   font-weight: 600;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .sets-container {
@@ -728,6 +784,7 @@
   width: 40px;
   font-weight: 500;
   color: var(--text-secondary);
+  transition: color var(--transition-speed);
 }
 
 .input-group {
@@ -744,7 +801,7 @@
   color: var(--text-primary);
   font-size: 0.875rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background-color var(--transition-speed), color var(--transition-speed);
 }
 
 .exercise-input:focus {
@@ -758,6 +815,7 @@
   transform: translateY(-50%);
   color: var(--text-tertiary);
   font-size: 0.875rem;
+  transition: color var(--transition-speed);
 }
 
 .set-actions {
@@ -801,7 +859,7 @@
   color: var(--text-secondary);
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.2s, color 0.2s, border-color var(--transition-speed);
 }
 
 .add-set-btn:hover {
@@ -843,7 +901,7 @@
   color: var(--text-primary);
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, color var(--transition-speed);
 }
 
 .set-timer-btn:hover {
@@ -854,6 +912,7 @@
   padding: 16px 20px;
   border-top: 1px solid var(--border-color);
   display: none;
+  transition: border-color var(--transition-speed);
 }
 
 .notes-section.show {
@@ -873,7 +932,7 @@
   resize: vertical;
   min-height: 100px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background-color var(--transition-speed), color var(--transition-speed);
 }
 
 .notes-input:focus {
@@ -895,6 +954,10 @@
   transition: opacity 0.3s;
 }
 
+.dark-mode .overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
 .overlay.active {
   opacity: 1;
   pointer-events: auto;
@@ -914,7 +977,7 @@
   overflow: hidden;
   opacity: 0;
   pointer-events: none;
-  transition: transform 0.3s, opacity 0.3s;
+  transition: transform 0.3s, opacity 0.3s, background-color var(--transition-speed);
   box-shadow: var(--shadow-lg);
 }
 
@@ -934,12 +997,15 @@
   position: relative;
   padding: 20px;
   border-bottom: 1px solid var(--border-color);
+  transition: border-color var(--transition-speed);
 }
 
 .modal-header h2 {
   font-size: 1.5rem;
   font-weight: 700;
   text-align: center;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .close-modal {
@@ -957,7 +1023,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, color var(--transition-speed);
 }
 
 .close-modal:hover {
@@ -967,6 +1033,8 @@
 .modal-body {
   padding: 20px;
   overflow-y: auto;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .timer-modal-content {
@@ -984,6 +1052,8 @@
   font-size: 3rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .timer-presets {
@@ -1001,7 +1071,7 @@
   color: var(--text-primary);
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.2s, color 
 }
 
 .timer-preset-btn:hover {

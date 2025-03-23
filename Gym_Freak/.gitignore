@@ -30,3 +30,4 @@ staticfiles/
 media/
 frontend/node_modules/
 frontend/dist/
+frontend/static/frontend/
