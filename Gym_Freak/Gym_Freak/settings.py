@@ -55,7 +55,9 @@ ROOT_URLCONF = 'Gym_Freak.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],  # Use a templates folder if needed
+        'DIRS': [
+            os.path.join(BASE_DIR, 'frontend', 'templates')  # Ensure this path is correctly included
+        ],  # Use a templates folder if needed
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

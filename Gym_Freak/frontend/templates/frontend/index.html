@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+{% comment %} <!DOCTYPE html>
 <html lang="en">
   
-{% comment %} <head>
-    <meta charset="UTF-8">
+
+ <head>
+    {% comment %} <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gym Freak - Transform your Fitness Journey</title>
     <meta name="description" content="GymFreak - Track workouts, connect with trainers, and achieve your fitness goals" />
@@ -12,11 +13,11 @@
     {% load static %}
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <link rel="stylesheets" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
-    <link rel="stylesheets" type="text/css" href="{% static 'css/index.css' %}">
-</head> {% endcomment %}
+    <link rel="stylesheets" type="text/css" href="{% static 'css/index.css' %}"> {% endcomment %}
+{% comment %} </head> 
 
 <body>
   <div id="app"></div>
 <script src="{% static 'frontend/main.js' %}"></script>
 </body>
-</html>
+</html> {% endcomment %} {% endcomment %}
