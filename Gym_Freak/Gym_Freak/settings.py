@@ -105,9 +105,11 @@ USE_TZ = True
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 STATIC_URL = '/static/frontend/'
+# STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'frontend/static'),  # Correctly points to static files inside the frontend folder
+    # os.path.join(BASE_DIR, 'frontend', 'build', 'static'),
 ]
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Where collected static files will be stored

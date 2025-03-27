@@ -1,4 +1,4 @@
-{% comment %} <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -47,14 +47,14 @@
     </header>
 
     <!-- Workout Form Section -->
-    {% comment %} <div class="workout-form-container">
+     <div class="workout-form-container">
         <h2>Log Your Workout</h2>
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             {{ form.as_p }}
             <input type="submit" value="Log Workout">
         </form>
-    </div> {% endcomment %}
+    </div> 
 
     <div class="workout-session-container">
         <div class="session-header">

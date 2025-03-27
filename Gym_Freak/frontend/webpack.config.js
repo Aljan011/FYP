@@ -1,5 +1,6 @@
 const path = require("path");
 const webpack = require("webpack");
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   entry: "./src/index.js",
@@ -7,6 +8,11 @@ module.exports = {
     path: path.resolve(__dirname, "./static/frontend"),
     filename: "main.js",
   },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: "./templates/index.html",
+    }),
+  ],
   module: {
     rules: [
       {
@@ -17,7 +23,11 @@ module.exports = {
           options: {
             presets: ["@babel/preset-env", "@babel/preset-react"],
           },
-        },
+        }
+      },
+      {
+          test: /\.css$/,  // ✅ Add this rule to handle CSS files
+          use: ["style-loader", "css-loader"],
       },
     ],
   },
