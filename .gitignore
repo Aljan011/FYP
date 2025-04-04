@@ -1,7 +1,66 @@
-Gym_Freak/frontend/node_modules/.package-lock.json
-Gym_Freak/frontend/package-lock.json
-Gym_Freak/frontend/package.json
-Gym_Freak/frontend/package-lock.json
-Gym_Freak/frontend/node_modules/.bin/acorn.ps1
-Gym_Freak/frontend/node_modules/.bin/envinfo.ps1
-Gym_Freak/frontend/package-lock.json
+# Python-related files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.db
+*.sqlite3
+*.sqlite3-journal
+*.log
+
+# Virtual environment directories
+venv/
+env/
+.venv/
+ENV/
+
+# Django-specific files
+*.log
+*.sqlite3
+*.sqlite3-journal
+
+# Node.js-related files for frontend (React)
+frontend/node_modules/
+frontend/package-lock.json
+frontend/package.json
+frontend/package-lock.json
+frontend/node_modules/.bin/acorn.ps1
+frontend/node_modules/.bin/envinfo.ps1
+frontend/.env
+
+# IDE/editor-specific files
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# .env file for environment variables
+*.env
+
+# Coverage reports
+.coverage
+coverage.xml
+*.coveragerc
+
+# Django migrations
+backend/gymfreak/migrations/
+
+# Frontend build folder
+frontend/build/
+
+# PyCharm project files
+*.iml
+
+# JetBrains IDE files
+.idea/
+
+# Mac-specific system files
+.DS_Store
+
+# Windows-specific system files
+Thumbs.db
+
+# Environment-specific files
+*.env
