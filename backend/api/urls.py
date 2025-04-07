@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
-from .views import RegisterUserView, ApproveUserView, LoginView, DietViewSet, RecipeViewSet
+from .views import RegisterUserView, ApproveUserView, LoginView, DietViewSet, RecipeViewSet, UserProfileView
 
 # Initialize the router
 router = DefaultRouter()
@@ -21,6 +21,9 @@ urlpatterns = [
     path("register/", RegisterUserView.as_view(), name="register"),
     path("approve/<int:pk>/", ApproveUserView.as_view(), name="approve-user"),
     path("login/", LoginView.as_view(), name="login"),
+    
+     # ✅ User Profile API Endpoint
+    path("user-profile/", UserProfileView.as_view(), name="user-profile"),
 
     # Django REST Framework's built-in login/logout endpoints
     path("api-auth/", include("rest_framework.urls")),
