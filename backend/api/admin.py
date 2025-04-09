@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    UserProfile, Exercise, Workout, WorkoutTracking, WorkoutPost, Diet, Recipe, RecipeStep, Ingredient
+    UserProfile, Exercise, Workout, WorkoutTracking, WorkoutPost, Diet, Recipe, RecipeStep, Ingredient, WorkoutExerciseSet
 )
 
 @admin.register(UserProfile)
@@ -46,5 +46,4 @@ admin.site.register(Diet)
 admin.site.register(Recipe)
 admin.site.register(RecipeStep)
 admin.site.register(Ingredient)
-
-
+admin.site.register(WorkoutExerciseSet) 

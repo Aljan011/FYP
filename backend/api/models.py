@@ -72,6 +72,7 @@ class WorkoutSession(models.Model):
     total_exercises = models.IntegerField(default=0)
     total_sets = models.IntegerField(default=0)
     notes = models.TextField(blank=True, null=True)
+    workout = models.OneToOneField(Workout, on_delete=models.SET_NULL, null=True, blank=True, related_name='session')
 
     def __str__(self):
         return f"Workout Session for {self.user.username} on {self.started_at.date()}"

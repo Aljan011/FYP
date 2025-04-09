@@ -8,11 +8,12 @@ from rest_framework.response import Response
 from rest_framework.generics import CreateAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from django.utils import timezone
+from django.db.models import Q
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe
+from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout
 from .serializers import (
     ExerciseSerializer, 
     WorkoutSessionSerializer, 
@@ -147,10 +148,28 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
             )
         return Exercise.objects.all()
 
+
 # ✅ WORKOUT SESSION VIEWSET
+    """
+    The code defines viewsets for managing workout sessions and exercise sets, including actions to add
+    exercise sets and finish a workout session.
+    
+    :param request: The `request` parameter in Django represents the HTTP request that triggered the
+    view. It contains information about the request, such as the request method, headers, data, and user
+    making the request. In the context of Django viewsets, the `request` parameter is typically used to
+    access data sent in
+    :param pk: The `pk` parameter in Django REST framework stands for "primary key" and is used to
+    identify a specific instance of a model. In the context of a viewset, `pk` refers to the primary key
+    value of the object being operated on. It is typically used in URLs to specify which
+    :return: The `WorkoutSessionViewSet` class defines a viewset for managing workout sessions. It
+    includes methods for creating workout sessions, adding exercise sets to a session, and finishing a
+    workout session. The `WorkoutExerciseSetViewSet` class defines a viewset for managing workout
+    exercise sets. Both viewsets require authentication for access.
+    """
 class WorkoutSessionViewSet(viewsets.ModelViewSet):
     serializer_class = WorkoutSessionSerializer
     permission_classes = [IsAuthenticated]
+    queryset = WorkoutSession.objects.all()
 
     def get_queryset(self):
         return WorkoutSession.objects.filter(user=self.request.user)
@@ -161,25 +180,63 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['POST'])
     def add_exercise_set(self, request, pk=None):
         workout_session = self.get_object()
+        print(f"Received request data: {request.data}")  # Debug
+
         serializer = WorkoutExerciseSetSerializer(data=request.data)
-        
         if serializer.is_valid():
             exercise_set = serializer.save(workout_session=workout_session)
             workout_session.total_exercises += 1
             workout_session.total_sets += 1
             workout_session.save()
+
             return Response(WorkoutExerciseSetSerializer(exercise_set).data, status=status.HTTP_201_CREATED)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            print(f"Serializer errors: {serializer.errors}")  # Debug
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['POST'])
     def finish_workout(self, request, pk=None):
         workout_session = self.get_object()
+
         workout_session.ended_at = timezone.now()
         workout_session.total_duration = workout_session.ended_at - workout_session.started_at
-        workout_session.notes = request.data.get('notes', workout_session.notes)
+
+        notes = request.data.get('notes', "")
+        if notes:
+            workout_session.notes = notes
+
         workout_session.save()
-        return Response(WorkoutSessionSerializer(workout_session).data, status=status.HTTP_200_OK)
+
+        # 💥 Create a Workout entry
+        workout = Workout.objects.create(
+            user=request.user,
+            title=f"Workout on {workout_session.started_at.strftime('%Y-%m-%d')}",
+            description=notes,
+            duration=workout_session.total_duration,
+            notes=notes,
+        )
+
+        # ✅ Add exercises
+        exercises = Exercise.objects.filter(
+            id__in=workout_session.exercise_sets.values_list('exercise_id', flat=True)
+        ).distinct()
+        workout.exercises.set(exercises)
+
+        # ✅ Add sets
+        sets = []
+        for exercise_set in workout_session.exercise_sets.all():
+            sets.append({
+                "exercise": exercise_set.exercise.name,
+                "set_number": exercise_set.set_number,
+                "weight": exercise_set.weight,
+                "reps": exercise_set.reps,
+                "rest_time": exercise_set.rest_time,
+            })
+        workout.sets = sets
+        workout.save()
+
+        return Response({"message": "Workout finished successfully", "workout_id": workout.id}, status=status.HTTP_200_OK)
+
 
 # ✅ WORKOUT EXERCISE SET VIEWSET
 class WorkoutExerciseSetViewSet(viewsets.ModelViewSet):
@@ -188,6 +245,55 @@ class WorkoutExerciseSetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return WorkoutExerciseSet.objects.filter(workout_session__user=self.request.user)
+    
+    # @action(detail=True, methods=['POST'])
+    
+    # def finish_workout(self, request, pk=None):
+    #     workout_session = self.get_object()
+
+    #     print(f"Request Data: {request.data}")
+
+    #     workout_session.ended_at = timezone.now()
+    #     workout_session.total_duration = workout_session.ended_at - workout_session.started_at
+
+    #     notes = request.data.get('notes', None)
+    #     if notes:
+    #         workout_session.notes = notes
+
+    #     workout_session.save()
+
+    #     # 💥 Create a Workout entry
+    #     workout = Workout.objects.create(
+    #         user=request.user,
+    #         title=f"Workout on {workout_session.started_at.strftime('%Y-%m-%d')}",
+    #         description=notes or "",
+    #         duration=workout_session.total_duration,
+    #         notes=notes,
+    #         calories_burned=None,  # Optional: compute later
+    #     )
+
+    #     # 💡 Optional: Add exercises to Workout.many_to_many field
+    #     exercises = Exercise.objects.filter(
+    #         workout_sessions__in=workout_session.exercise_sets.all()
+    #     ).distinct()
+    #     workout.exercises.set(exercises)
+
+    #     # 💥 Optional: Add sets info from WorkoutExerciseSet
+    #     sets = []
+    #     for exercise_set in workout_session.exercise_sets.all():
+    #         sets.append({
+    #             "exercise": exercise_set.exercise.name,
+    #             "set_number": exercise_set.set_number,
+    #             "weight": exercise_set.weight,
+    #             "reps": exercise_set.reps,
+    #             "rest_time": exercise_set.rest_time,
+    #         })
+
+    #     workout.sets = sets
+    #     workout.save()
+
+    #     return Response(WorkoutSessionSerializer(workout_session).data, status=status.HTTP_200_OK)
+
 
 # ✅ DIET VIEWSET
 class DietViewSet(viewsets.ReadOnlyModelViewSet):
