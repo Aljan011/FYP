@@ -1,0 +1,174 @@
+/* Global Styles */
+body {
+    font-family: 'Inter', 'Arial', sans-serif;
+    background-color: #1a2b3c; /* Deeper dark blue background */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    color: #1a365d;
+}
+
+/* Authentication Container */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #1a2b3c;
+    padding: 20px;
+}
+
+.auth-wrapper {
+    width: 100%;
+    max-width: 450px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 15px 50px rgba(26, 43, 60, 0.2); /* Enhanced shadow with dark blue tone */
+    overflow: hidden;
+    border: 1px solid #2c3e50; /* Subtle dark blue border */
+    transition: all 0.3s ease;
+}
+
+.auth-wrapper:hover {
+    box-shadow: 0 20px 60px rgba(26, 43, 60, 0.3);
+    transform: translateY(-5px);
+}
+
+/* Header Styles */
+.auth-header {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    text-align: center;
+    padding: 20px;
+    background-color: #1a365d; /* Dark blue header background */
+    margin-bottom: 10px;
+    border-radius: 10px ;
+}
+
+/* Form Styles */
+.auth-form {
+    padding: 30px;
+    background-color: #f7fafc;
+}
+
+/* Add this to your existing signup.css file */
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .success-message {
+    animation: fadeIn 0.5s;
+  }
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #1a365d;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #2c3e50; /* Dark blue border */
+    border-radius: 8px;
+    font-size: 16px;
+    background-color: #ffffff;
+    color: #1a365d;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.form-input:focus {
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
+}
+
+.error-message {
+    color: #c53030; /* Deeper red for error messages */
+    font-size: 14px;
+    margin-top: 10px;
+    animation: shake 0.3s linear;
+}
+
+.submit-button {
+    width: 100%;
+    padding: 14px;
+    background-color: #1a365d; /* Dark blue button */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.submit-button:hover {
+    background-color: #2c3e50; /* Slightly lighter dark blue on hover */
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(26, 43, 60, 0.2);
+}
+
+/* Name Inputs Grid */
+.name-inputs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+/* Toggle Form Section */
+.toggle-section {
+    background-color: #2c3e50; /* Dark blue background */
+    border-top: 1px solid #1a365d;
+    padding: 20px;
+    text-align: center;
+}
+
+.toggle-button {
+    background: none;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 15px;
+    transition: color 0.3s ease;
+    text-decoration: underline;
+}
+
+.toggle-button:hover {
+    color: #3182ce;
+}
+
+/* Animations */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 480px) {
+    .name-inputs-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-wrapper {
+        max-width: 100%;
+        margin: 0 10px;
+    }
+}

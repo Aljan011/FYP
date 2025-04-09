@@ -1,0 +1,223 @@
+/* Base styles and variables */
+:root {
+    --primary-color: #4a6cf7;
+    --secondary-color: #2cbc63;
+    --text-color: #333;
+    --bg-color: #f5f8ff;
+    --nav-bg: #ffffff;
+    --border-color: #e9ecef;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+  }
+  
+  /* Dark mode variables */
+  .dark-mode {
+    --primary-color: #5d7bff;
+    --secondary-color: #33d46e;
+    --text-color: #e0e0e0;
+    --bg-color: #1a1a2e;
+    --nav-bg: #16213e;
+    --border-color: #2c3652;
+    --shadow-color: rgba(0, 0, 0, 0.4);
+  }
+  
+  /* Reset and base styles */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: var(--transition);
+  }
+  
+  /* Header and Navigation Styles */
+  .header {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    background-color: var(--nav-bg);
+    box-shadow: 0 2px 10px var(--shadow-color);
+    transition: var(--transition);
+  }
+  
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  
+  .logo h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .logo h1:hover {
+    transform: scale(1.05);
+  }
+  
+  /* Navigation Links */
+  .nav-links ul {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+  }
+  
+  .nav-link {
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: var(--transition);
+    padding: 0.5rem 0.8rem;
+    border-radius: 4px;
+  }
+  
+  .nav-link:hover, .nav-link.active {
+    color: var(--primary-color);
+    background-color: rgba(74, 108, 247, 0.1);
+  }
+  
+  /* Nav Buttons (User Avatar and Theme Toggle) */
+  .nav-buttons {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .theme-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    transition: var(--transition);
+    background-color: rgba(74, 108, 247, 0.1);
+  }
+  
+  .theme-toggle:hover {
+    background-color: rgba(74, 108, 247, 0.2);
+  }
+  
+  /* User Avatar */
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid var(--primary-color);
+    transition: var(--transition);
+  }
+  
+  .user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .user-avatar:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Hamburger Menu for Mobile */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    z-index: 1001;
+  }
+  
+  .hamburger span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background-color: var(--text-color);
+    margin: 3px 0;
+    transition: var(--transition);
+    border-radius: 3px;
+  }
+  
+  /* Animation Classes */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+  
+  .fade-up.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  /* Responsive Designs */
+  @media (max-width: 992px) {
+    .navbar {
+      padding: 0.8rem 1.5rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .hamburger {
+      display: flex;
+    }
+    
+    .nav-links {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 70%;
+      height: 100vh;
+      background-color: var(--nav-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      box-shadow: -5px 0 15px var(--shadow-color);
+    }
+    
+    .nav-links.active {
+      right: 0;
+    }
+    
+    .nav-links ul {
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+    
+    .nav-link {
+      font-size: 1.2rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .navbar {
+      padding: 0.8rem 1rem;
+    }
+    
+    .logo h1 {
+      font-size: 1.5rem;
+    }
+    
+    .nav-links {
+      width: 85%;
+    }
+  }
