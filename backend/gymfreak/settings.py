@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',# REST API support
     "corsheaders",  # CORS support for React
     "api",
+    "django_extensions",  # For image processing
 ]
 
 MIDDLEWARE = [

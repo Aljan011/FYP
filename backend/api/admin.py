@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    UserProfile, Exercise, Workout, WorkoutTracking, WorkoutPost, Diet, Recipe, RecipeStep, Ingredient, WorkoutExerciseSet
+    UserProfile, Exercise, Workout, WorkoutTracking, WorkoutPost, Diet, DietType, Recipe, RecipeStep, Ingredient, WorkoutExerciseSet
 )
 
 @admin.register(UserProfile)
@@ -42,7 +42,14 @@ class WorkoutPostAdmin(admin.ModelAdmin):
     list_display = ('user', 'workout', 'created_at')
     search_fields = ('user__username',)
     
-admin.site.register(Diet)
+class DietTypeInline(admin.TabularInline):
+    model = DietType
+    extra = 1
+
+class DietAdmin(admin.ModelAdmin):
+    inlines = [DietTypeInline]
+
+admin.site.register(Diet, DietAdmin)
 admin.site.register(Recipe)
 admin.site.register(RecipeStep)
 admin.site.register(Ingredient)

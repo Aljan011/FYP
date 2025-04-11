@@ -13,6 +13,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout
 from .serializers import (
     ExerciseSerializer, 
@@ -245,66 +246,26 @@ class WorkoutExerciseSetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return WorkoutExerciseSet.objects.filter(workout_session__user=self.request.user)
-    
-    # @action(detail=True, methods=['POST'])
-    
-    # def finish_workout(self, request, pk=None):
-    #     workout_session = self.get_object()
-
-    #     print(f"Request Data: {request.data}")
-
-    #     workout_session.ended_at = timezone.now()
-    #     workout_session.total_duration = workout_session.ended_at - workout_session.started_at
-
-    #     notes = request.data.get('notes', None)
-    #     if notes:
-    #         workout_session.notes = notes
-
-    #     workout_session.save()
-
-    #     # 💥 Create a Workout entry
-    #     workout = Workout.objects.create(
-    #         user=request.user,
-    #         title=f"Workout on {workout_session.started_at.strftime('%Y-%m-%d')}",
-    #         description=notes or "",
-    #         duration=workout_session.total_duration,
-    #         notes=notes,
-    #         calories_burned=None,  # Optional: compute later
-    #     )
-
-    #     # 💡 Optional: Add exercises to Workout.many_to_many field
-    #     exercises = Exercise.objects.filter(
-    #         workout_sessions__in=workout_session.exercise_sets.all()
-    #     ).distinct()
-    #     workout.exercises.set(exercises)
-
-    #     # 💥 Optional: Add sets info from WorkoutExerciseSet
-    #     sets = []
-    #     for exercise_set in workout_session.exercise_sets.all():
-    #         sets.append({
-    #             "exercise": exercise_set.exercise.name,
-    #             "set_number": exercise_set.set_number,
-    #             "weight": exercise_set.weight,
-    #             "reps": exercise_set.reps,
-    #             "rest_time": exercise_set.rest_time,
-    #         })
-
-    #     workout.sets = sets
-    #     workout.save()
-
-    #     return Response(WorkoutSessionSerializer(workout_session).data, status=status.HTTP_200_OK)
-
 
 # ✅ DIET VIEWSET
-class DietViewSet(viewsets.ReadOnlyModelViewSet):
+class DietViewSet(viewsets.ModelViewSet):
     queryset = Diet.objects.all()
     serializer_class = DietSerializer
+    lookup_field = 'slug'
+    
+    def get_object(self):
+          queryset = self.get_queryset()
+          filter_kwargs = {self.lookup_field: self.kwargs[self.lookup_field]}
+          obj = get_object_or_404(queryset, **filter_kwargs)
+          self.check_object_permissions(self.request, obj)
+          return obj
 
 # ✅ RECIPE VIEWSET
 class RecipeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['diet']
     search_fields = ['title', 'description', 'tags']
 
     def get_serializer_class(self):

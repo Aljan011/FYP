@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Exercise, WorkoutSession, WorkoutExerciseSet, UserProfile, Diet, Recipe, RecipeStep, Ingredient, Workout, WorkoutTracking, WorkoutPost
-# from rest_framework import serializers
+from .models import Exercise, WorkoutSession, WorkoutExerciseSet, UserProfile, Diet, Recipe, RecipeStep, Ingredient, Workout, WorkoutTracking, WorkoutPost, DietType
 
 
 
@@ -9,12 +8,6 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "email", "first_name", "last_name", "is_active"]
-
-# class RegistrationSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Userfrom rest_framework import serializers
-# from django.contrib.auth.models import User
-# from .models import Exercise, WorkoutSession, WorkoutExerciseSet, UserProfile, Diet, Recipe, RecipeStep, Ingredient
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -104,50 +97,6 @@ class WorkoutSessionSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['id', 'user', 'started_at']
 
-class DietSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Diet
-        fields = '__all__'
-        read_only_fields = ['id']
-
-class RecipeStepSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RecipeStep
-        fields = ['step_number', 'description']
-        read_only_fields = ['id']
-
-class IngredientSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Ingredient
-        fields = ['name', 'quantity']
-        read_only_fields = ['id']
-
-class RecipeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Recipe
-        fields = ['id', 'title', 'description', 'image', 'prep_time', 
-                  'calories', 'protein', 'carbs', 'fat']
-        read_only_fields = ['id']
-
-class RecipeDetailSerializer(serializers.ModelSerializer):
-    steps = RecipeStepSerializer(many=True, read_only=True)
-    ingredients = IngredientSerializer(many=True, read_only=True)
-    
-    class Meta:
-        model = Recipe
-        fields = ['id', 'title', 'description', 'image', 'prep_time', 
-                  'calories', 'protein', 'carbs', 'fat', 'steps', 'ingredients']
-        read_only_fields = ['id']
-        fields = ["username", "email", "password"]
-        extra_kwargs = {"password": {"write_only": True}}
-
-    def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        user.is_active = False  # Requires admin approval
-        user.save()
-        UserProfile.objects.create(user=user)
-        return user
-
 class ExerciseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exercise
@@ -157,22 +106,6 @@ class ExerciseSerializer(serializers.ModelSerializer):
             'recommended_sets', 'recommended_reps', 
             'recommended_rest_time'
         ]
-
-# class WorkoutExerciseSetSerializer(serializers.ModelSerializer):
-#     exercise = ExerciseSerializer(read_only=True)
-#     exercise_id = serializers.PrimaryKeyRelatedField(
-#         queryset=Exercise.objects.all(), 
-#         source='exercise', 
-#         write_only=True
-#     )
-
-#     class Meta:
-#         model = WorkoutExerciseSet
-#         fields = [
-#             'id', 'exercise', 'exercise_id', 'workout_session', 
-#             'set_number', 'weight', 'reps', 'rest_time'
-#         ]
-#         read_only_fields = ['id']
 
 class WorkoutSessionSerializer(serializers.ModelSerializer):
     exercise_sets = WorkoutExerciseSetSerializer(many=True, read_only=True)
@@ -192,32 +125,47 @@ class WorkoutSessionSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['user', 'started_at', 'workout', 'exercise_sets']
         
-class DietSerializer(serializers.ModelSerializer):
+        
+class DietTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Diet
-        fields = '__all__'
-
-class RecipeStepSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RecipeStep
-        fields = ['step_number', 'description']
-
-class IngredientSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Ingredient
-        fields = ['name', 'quantity']
-
+        model = DietType
+        fields = ['id', 'name', 'goal', 'foods', 'avoid']
+        
 class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ['id', 'title', 'description', 'image', 'prep_time', 
                   'calories', 'protein', 'carbs', 'fat']
+        read_only_fields = ['id']
+        
+class DietSerializer(serializers.ModelSerializer):
+    types = DietTypeSerializer(many=True, read_only=True)
+    recipes = RecipeSerializer(many=True, read_only=True)
+      
+    class Meta:
+        model = Diet
+        fields = '__all__'
+        read_only_fields = ['id', 'user']
+
+class RecipeStepSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecipeStep
+        fields = ['step_number', 'description']
+        read_only_fields = ['id']
+
+class IngredientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ingredient
+        fields = ['name', 'quantity']
+        read_only_fields = ['id']
 
 class RecipeDetailSerializer(serializers.ModelSerializer):
     steps = RecipeStepSerializer(many=True, read_only=True)
     ingredients = IngredientSerializer(many=True, read_only=True)
     
+    
     class Meta:
         model = Recipe
         fields = ['id', 'title', 'description', 'image', 'prep_time', 
                   'calories', 'protein', 'carbs', 'fat', 'steps', 'ingredients']
+        read_only_fields = ['id']

@@ -4,6 +4,7 @@ import string
 import random
 from django.conf import settings
 from django.utils.timezone import now
+from django.utils.text import slugify
 
 
 def generate_unique_code():
@@ -114,25 +115,32 @@ class WorkoutPost(models.Model):
         return f"Post by {self.user.username} on {self.created_at.date()}"
     
 class Diet(models.Model):
-     name = models.CharField(max_length=100)
-     description = models.TextField()
-     icon = models.ImageField(upload_to='diet_icons/', null=True, blank=True)
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    protein_ratio = models.FloatField(null=True, blank=True)
+    carb_ratio = models.FloatField(null=True, blank=True)
+    fat_ratio = models.FloatField(null=True, blank=True)
+    benefits = models.TextField(blank=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True, null=True)
     
-    # Macronutrient ratios
-     protein_ratio = models.CharField(max_length=50, null=True, blank=True)
-     carb_ratio = models.CharField(max_length=50, null=True, blank=True)
-     fat_ratio = models.CharField(max_length=50, null=True, blank=True)
-    
-    # Additional diet-specific information fields
-     daily_calorie_deficit = models.CharField(max_length=100, null=True, blank=True)  # For weight loss
-     protein_intake = models.CharField(max_length=100, null=True, blank=True)  # For muscle building
-     carb_limit = models.CharField(max_length=100, null=True, blank=True)  # For keto
-    
-    # Benefits or additional info
-     benefits = models.TextField(null=True, blank=True)
-    
-     def __str__(self):
+    def save(self, *args, **kwargs):
+        # Automatically generate a slug based on the name if slug is not provided
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
         return self.name
+    
+class DietType(models.Model):
+    diet = models.ForeignKey(Diet, related_name='types', on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    goal = models.TextField()
+    foods = models.TextField()
+    avoid = models.TextField()
+
+    def __str__(self):
+        return f"{self.diet.name} - {self.name}"
 
 class Recipe(models.Model):
     title = models.CharField(max_length=200)
