@@ -60,9 +60,19 @@ class Workout(models.Model):
     progress_pictures = models.ImageField(upload_to="progress_pics/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    summary = models.TextField(null=True, blank=True)  # Example of a 'summary' field
+
 
     def __str__(self):
         return f"{self.user.username} - {self.title}"
+    
+    session = models.OneToOneField(
+        'WorkoutSession',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='workout_session'
+    )
     
 
 class WorkoutSession(models.Model):
@@ -73,7 +83,6 @@ class WorkoutSession(models.Model):
     total_exercises = models.IntegerField(default=0)
     total_sets = models.IntegerField(default=0)
     notes = models.TextField(blank=True, null=True)
-    workout = models.OneToOneField(Workout, on_delete=models.SET_NULL, null=True, blank=True, related_name='session')
 
     def __str__(self):
         return f"Workout Session for {self.user.username} on {self.started_at.date()}"
@@ -106,13 +115,13 @@ class WorkoutTracking(models.Model):
 
 
 class WorkoutPost(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="workout_posts")
-    workout = models.ForeignKey(WorkoutTracking, on_delete=models.CASCADE, null=True, blank=True)
-    caption = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    workout = models.ForeignKey('Workout', on_delete=models.CASCADE)
+    posted_at = models.DateTimeField(auto_now_add=True)
+    caption = models.TextField(blank=True)
 
     def __str__(self):
-        return f"Post by {self.user.username} on {self.created_at.date()}"
+        return f"{self.user.username}'s post on {self.posted_at}"
     
 class Diet(models.Model):
     name = models.CharField(max_length=255)
@@ -121,6 +130,7 @@ class Diet(models.Model):
     carb_ratio = models.FloatField(null=True, blank=True)
     fat_ratio = models.FloatField(null=True, blank=True)
     benefits = models.TextField(blank=True)
+    image = models.ImageField(upload_to='diet_images/', blank=True, null=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True, null=True)
     
     def save(self, *args, **kwargs):
@@ -144,7 +154,7 @@ class DietType(models.Model):
 
 class Recipe(models.Model):
     title = models.CharField(max_length=200)
-    diet = models.ForeignKey(Diet, related_name='recipes', on_delete=models.CASCADE)
+    diet = models.ForeignKey(DietType, related_name='recipes', on_delete=models.CASCADE)
     description = models.TextField()
     image = models.ImageField(upload_to='recipe_images/')
     prep_time = models.IntegerField(help_text="Preparation time in minutes")

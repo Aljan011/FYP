@@ -1,7 +1,8 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.authtoken.models import Token
+from rest_framework.authentication import TokenAuthentication
 from django.http import JsonResponse
-from rest_framework import status, viewsets, filters
+from rest_framework import status, viewsets, filters, permissions, generics
 from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -14,11 +15,12 @@ from django.contrib.auth import authenticate, login
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout
+from django.contrib.auth import get_user_model
+from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout, WorkoutPost
 from .serializers import (
-    ExerciseSerializer, 
+    ExerciseSerializer, WorkoutSerializer,
     WorkoutSessionSerializer, 
-    WorkoutExerciseSetSerializer, 
+    WorkoutExerciseSetSerializer, WorkoutPostSerializer,
     DietSerializer,
     RecipeSerializer, RecipeDetailSerializer, 
     RegistrationSerializer, UserSerializer
@@ -132,6 +134,30 @@ class UserProfileView(APIView):
         # Return updated user data
         return self.get(request)
 
+class UserProfileViewSet(viewsets.ModelViewSet):
+    
+    @action(detail=True, methods=['get'])
+    def workouts(self, request, pk=None):
+        """Get workouts for a specific user profile"""
+        User = get_user_model()
+        try:
+            user = User.objects.get(pk=pk)
+            # Check permission - only allow if requesting own data or admin
+            if request.user != user and not request.user.is_staff:
+                return Response(
+                    {"detail": "You do not have permission to view this user's workouts"}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
+            workouts = Workout.objects.filter(user=user).order_by('-created_at')
+            serializer = WorkoutSerializer(workouts, many=True)
+            return Response(serializer.data)
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "User not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 # ✅ EXERCISE VIEWSET (Public Access)
 class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Exercise.objects.all()
@@ -148,10 +174,42 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(equipment__icontains=query)
             )
         return Exercise.objects.all()
+    
+    
+class WorkoutViewSet(viewsets.ModelViewSet):
+    serializer_class = WorkoutSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return Workout.objects.filter(user=self.request.user).order_by('-created_at')
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    # Add this method to get user workouts
+    @action(detail=False, methods=['get'])
+    def user_workouts(self, request):
+        """Get all workouts for the current user"""
+        workouts = self.get_queryset()
+        serializer = self.get_serializer(workouts, many=True)
+        return Response(serializer.data)
+    
+class UserWorkoutList(APIView):
+     permission_classes = [IsAuthenticated]
+
+     def get(self, request, username):
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+        workouts = Workout.objects.filter(user=user).order_by('-created_at')
+        serializer = WorkoutSerializer(workouts, many=True)
+        return Response(serializer.data)
 
 
 # ✅ WORKOUT SESSION VIEWSET
-    """
+     """
     The code defines viewsets for managing workout sessions and exercise sets, including actions to add
     exercise sets and finish a workout session.
     
@@ -173,7 +231,11 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
     queryset = WorkoutSession.objects.all()
 
     def get_queryset(self):
-        return WorkoutSession.objects.filter(user=self.request.user)
+        queryset = super().get_queryset().filter(user=self.request.user)
+        user_id = self.request.query_params.get('user_id')
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user, started_at=timezone.now())
@@ -205,7 +267,6 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         notes = request.data.get('notes', "")
         if notes:
             workout_session.notes = notes
-
         workout_session.save()
 
         # 💥 Create a Workout entry
@@ -236,6 +297,10 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         workout.sets = sets
         workout.save()
 
+        # 🔗 Link the WorkoutSession to Workout
+        workout.session = workout_session
+        workout.save()
+
         return Response({"message": "Workout finished successfully", "workout_id": workout.id}, status=status.HTTP_200_OK)
 
 
@@ -246,9 +311,23 @@ class WorkoutExerciseSetViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return WorkoutExerciseSet.objects.filter(workout_session__user=self.request.user)
+    
+class WorkoutPostCreateView(generics.CreateAPIView):
+    serializer_class = WorkoutPostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class WorkoutPostListView(generics.ListAPIView):
+    queryset = WorkoutPost.objects.all().order_by('-posted_at')
+    serializer_class = WorkoutPostSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 # ✅ DIET VIEWSET
 class DietViewSet(viewsets.ModelViewSet):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = Diet.objects.all()
     serializer_class = DietSerializer
     lookup_field = 'slug'

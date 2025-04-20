@@ -39,7 +39,7 @@ class WorkoutTrackingAdmin(admin.ModelAdmin):
 
 @admin.register(WorkoutPost)
 class WorkoutPostAdmin(admin.ModelAdmin):
-    list_display = ('user', 'workout', 'created_at')
+    list_display = ('user', 'workout', 'posted_at')
     search_fields = ('user__username',)
     
 class DietTypeInline(admin.TabularInline):
@@ -47,6 +47,8 @@ class DietTypeInline(admin.TabularInline):
     extra = 1
 
 class DietAdmin(admin.ModelAdmin):
+    prepopulated_fields = {'slug': ('name',)}
+    list_display = ["name", "slug"]
     inlines = [DietTypeInline]
 
 admin.site.register(Diet, DietAdmin)
