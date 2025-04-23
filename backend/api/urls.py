@@ -38,8 +38,8 @@ urlpatterns = [
     path('token/', obtain_auth_token, name='api_token_auth'),
     
     #Workout post urls
-    path('api/workout-posts/', WorkoutPostListView.as_view(), name='workout-posts'),
-    path('api/workout-posts/create/', WorkoutPostCreateView.as_view(), name='create-workout-post'),
+    path('workout-posts/', WorkoutPostListView.as_view(), name='workout-posts'),
+    path('workout-posts/create/', WorkoutPostCreateView.as_view(), name='create-workout-post'),
 
     # Django REST Framework's built-in login/logout endpoints
     path("api-auth/", include("rest_framework.urls")),

@@ -17,7 +17,13 @@ def generate_unique_code():
 
 
 class UserProfile(models.Model):
+    ROLE_CHOICES = (
+        ('user', 'User'),
+        ('trainer', 'Trainer'),
+    )
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')  # NEW FIELD
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)

@@ -116,17 +116,38 @@ class WorkoutSessionSerializer(serializers.ModelSerializer):
 # Workout Post
 class WorkoutPostSerializer(serializers.ModelSerializer):
     workout_details = serializers.SerializerMethodField()
+    user = serializers.SerializerMethodField()
 
     class Meta:
         model = WorkoutPost
         fields = ['id', 'user', 'workout', 'caption', 'posted_at', 'workout_details']
+        read_only_fields = [ 'user', 'posted_at', 'workout_details']
+        
+    def get_user(self, obj):
+        return obj.user.username 
 
     def get_workout_details(self, obj):
+        session = getattr(obj.workout, 'session', None)
+        exercises = obj.workout.exercises.all()
+        exercise_data = []
+
+        # Loop over exercises and get sets from workout.sets
+        for exercise in exercises:
+            exercise_sets = [
+                s for s in obj.workout.sets
+                if s.get('exercise') == exercise.name  # Match by name or ID
+            ]
+            exercise_data.append({
+                'name': exercise.name,
+                'sets': exercise_sets
+            })
+
         return {
             "notes": obj.workout.notes,
-            "duration": obj.workout.session.total_duration if hasattr(obj.workout, 'session') else None,
-            "total_sets": obj.workout.session.total_sets if hasattr(obj.workout, 'session') else None,
-            "total_exercises": obj.workout.session.total_exercises if hasattr(obj.workout, 'session') else None,
+            "duration": session.total_duration if session else None,
+            "total_sets": session.total_sets if session else None,
+            "total_exercises": session.total_exercises if session else None,
+            "exercises": exercise_data
         }
 
 # Diet Type
