@@ -4,6 +4,7 @@ from rest_framework.authentication import TokenAuthentication
 from django.http import JsonResponse
 from rest_framework import status, viewsets, filters, permissions, generics
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.generics import CreateAPIView, UpdateAPIView
@@ -16,7 +17,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
-from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout, WorkoutPost
+from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout, WorkoutPost, Message
 from .serializers import (
     ExerciseSerializer, WorkoutSerializer,
     WorkoutSessionSerializer, 
@@ -27,7 +28,7 @@ from .serializers import (
 )
 
 
-# ✅ LOGIN VIEW WITH TOKEN
+#  LOGIN VIEW WITH TOKEN
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -46,19 +47,46 @@ class LoginView(APIView):
                 return Response({
                     'id': user.id,
                     'username': user.username,
+                     'role': user.profile.role,
                     'is_active': user.is_active,
-                    'token': token.key  # ✅ Send token in response
+                    'token': token.key  
                 }, status=status.HTTP_200_OK)
             return Response({'detail': 'Account pending approval'}, status=status.HTTP_403_FORBIDDEN)
         return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-# ✅ USER REGISTRATION VIEW
 class RegisterUserView(CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegistrationSerializer
     permission_classes = [AllowAny]
 
-# ✅ APPROVE USER VIEW (Admin Only)
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        email = request.data.get('email', '')
+        role = request.data.get('role', 'user')  # 'user' by default
+
+        if not username or not password:
+            return Response({'detail': 'Username and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(username=username).exists():
+            return Response({'detail': 'Username already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create the user
+        user = User.objects.create_user(username=username, password=password, email=email)
+        user.is_active = False  # Needs admin approval
+        user.save()
+
+        # Assign role to the profile (created via signal)
+        user.profile.role = role
+        user.profile.save()
+
+        return Response({
+            "message": "User registered successfully. Awaiting admin approval.",
+            "user_id": user.id,
+            "role": role
+        }, status=status.HTTP_201_CREATED)
+
+#  APPROVE USER VIEW (Admin Only)
 class ApproveUserView(UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -213,16 +241,16 @@ class UserWorkoutList(APIView):
     The code defines viewsets for managing workout sessions and exercise sets, including actions to add
     exercise sets and finish a workout session.
     
-    :param request: The `request` parameter in Django represents the HTTP request that triggered the
+    :param request: The request parameter in Django represents the HTTP request that triggered the
     view. It contains information about the request, such as the request method, headers, data, and user
-    making the request. In the context of Django viewsets, the `request` parameter is typically used to
+    making the request. In the context of Django viewsets, the request parameter is typically used to
     access data sent in
-    :param pk: The `pk` parameter in Django REST framework stands for "primary key" and is used to
-    identify a specific instance of a model. In the context of a viewset, `pk` refers to the primary key
+    :param pk: The pk parameter in Django REST framework stands for "primary key" and is used to
+    identify a specific instance of a model. In the context of a viewset, pk refers to the primary key
     value of the object being operated on. It is typically used in URLs to specify which
-    :return: The `WorkoutSessionViewSet` class defines a viewset for managing workout sessions. It
+    :return: The WorkoutSessionViewSet class defines a viewset for managing workout sessions. It
     includes methods for creating workout sessions, adding exercise sets to a session, and finishing a
-    workout session. The `WorkoutExerciseSetViewSet` class defines a viewset for managing workout
+    workout session. The WorkoutExerciseSetViewSet class defines a viewset for managing workout
     exercise sets. Both viewsets require authentication for access.
     """
 class WorkoutSessionViewSet(viewsets.ModelViewSet):
@@ -360,3 +388,46 @@ class RecipeViewSet(viewsets.ReadOnlyModelViewSet):
             serializer = self.get_serializer(recipes, many=True)
             return Response(serializer.data)
         return Response({"error": "Diet ID parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def chat_partners_for_user(request, user_id):
+    try:
+        current_profile = UserProfile.objects.get(user__id=user_id)
+    except UserProfile.DoesNotExist:
+        return Response({"detail": "UserProfile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if current_profile.role == 'user':
+        # If current user is a normal user → fetch all trainers
+        profiles = UserProfile.objects.filter(role='trainer').exclude(user__id=user_id)
+    else:
+        # If current user is a trainer → fetch all normal users
+        profiles = UserProfile.objects.filter(role='user').exclude(user__id=user_id)
+
+    chat_partners = [
+        {"id": profile.user.id, "username": profile.user.username}
+        for profile in profiles
+    ]
+    return Response(chat_partners)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_chat_history(request, user_id, partner_id):
+    """
+    Fetch all previous messages between the logged-in user and the selected chat partner.
+    """
+    messages = Message.objects.filter(
+        (Q(sender_id=user_id) & Q(receiver_id=partner_id)) |
+        (Q(sender_id=partner_id) & Q(receiver_id=user_id))
+    ).order_by('timestamp')
+
+    return Response([
+        {
+            "sender_id": msg.sender.id,
+            "receiver_id": msg.receiver.id,
+            "content": msg.content,
+            "timestamp": msg.timestamp
+        }
+        for msg in messages
+    ])

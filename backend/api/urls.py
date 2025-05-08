@@ -4,7 +4,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from django.conf.urls.static import static
 from django.conf import settings
 from . import views
-from .views import RegisterUserView, ApproveUserView, LoginView, DietViewSet, RecipeViewSet, UserProfileView, WorkoutViewSet, UserWorkoutList, WorkoutPostListView, WorkoutPostCreateView
+from .views import RegisterUserView, ApproveUserView, LoginView, DietViewSet, RecipeViewSet, UserProfileView, WorkoutViewSet, UserWorkoutList, WorkoutPostListView, WorkoutPostCreateView, chat_partners_for_user, get_chat_history
 
 # Initialize the router
 router = DefaultRouter()
@@ -40,6 +40,12 @@ urlpatterns = [
     #Workout post urls
     path('workout-posts/', WorkoutPostListView.as_view(), name='workout-posts'),
     path('workout-posts/create/', WorkoutPostCreateView.as_view(), name='create-workout-post'),
+    
+    #chat urls
+    path('chat-partners-for-user/<int:user_id>/', chat_partners_for_user),
+    path('chat-history/<int:user_id>/<int:partner_id>/', get_chat_history),
+
+
 
     # Django REST Framework's built-in login/logout endpoints
     path("api-auth/", include("rest_framework.urls")),
