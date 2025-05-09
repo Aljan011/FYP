@@ -58,12 +58,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def chat_message(self, event):
-        await self.send(text_data=json.dumps({
-            'type': 'chat_message',
-            'sender_id': event['sender_id'],
-            'receiver_id': event['receiver_id'],
-            'content': event['content']
-        }))
+       await self.send(text_data=json.dumps({
+           'type': 'chat_message',
+           'sender_id': event['sender_id'],
+           'receiver_id': event['receiver_id'],
+           'content': event['content'],
+           'timestamp': event.get('timestamp')  
+    }))
 
     async def typing_status(self, event):
         await self.send(text_data=json.dumps({

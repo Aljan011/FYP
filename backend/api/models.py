@@ -80,6 +80,17 @@ class Workout(models.Model):
         related_name='workout_session'
     )
     
+class WorkoutPlan(models.Model):
+    trainer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_plans')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_plans')
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    exercises = models.ManyToManyField('api.Exercise', related_name='workout_plans')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} for {self.user.username} by {self.trainer.username}"
+    
 
 class WorkoutSession(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='workout_sessions')

@@ -4,7 +4,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from django.conf.urls.static import static
 from django.conf import settings
 from . import views
-from .views import RegisterUserView, ApproveUserView, LoginView, DietViewSet, RecipeViewSet, UserProfileView, WorkoutViewSet, UserWorkoutList, WorkoutPostListView, WorkoutPostCreateView, chat_partners_for_user, get_chat_history
+from .views import RegisterUserView, ApproveUserView, LoginView, UserProfileView, DietViewSet, RecipeViewSet, WorkoutViewSet, UserWorkoutList, WorkoutPostListView, WorkoutPostCreateView, WorkoutPlanViewSet, chat_partners_for_user, get_chat_history
 
 # Initialize the router
 router = DefaultRouter()
@@ -16,6 +16,7 @@ router.register(r'workouts', WorkoutViewSet, basename='workout')
 # router.register(r'finish_workout', views.FinishWorkoutViewSet, basename='finishworkout')
 router.register(r'workout_sessions', views.WorkoutSessionViewSet, basename='workoutsession')
 router.register(r'workout_exercise_sets', views.WorkoutExerciseSetViewSet, basename='workoutexerciseset')
+router.register(r'workout-plans', WorkoutPlanViewSet, basename='workoutplan')
 router.register(r'diets', DietViewSet)
 router.register(r'recipes', RecipeViewSet)
 

@@ -17,11 +17,13 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
-from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout, WorkoutPost, Message
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan
 from .serializers import (
     ExerciseSerializer, WorkoutSerializer,
     WorkoutSessionSerializer, 
-    WorkoutExerciseSetSerializer, WorkoutPostSerializer,
+    WorkoutExerciseSetSerializer, WorkoutPostSerializer, WorkoutPlanSerializer,
     DietSerializer,
     RecipeSerializer, RecipeDetailSerializer, 
     RegistrationSerializer, UserSerializer
@@ -187,6 +189,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             )
 
 # ✅ EXERCISE VIEWSET (Public Access)
+
 class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Exercise.objects.all()
     serializer_class = ExerciseSerializer
@@ -431,3 +434,73 @@ def get_chat_history(request, user_id, partner_id):
         }
         for msg in messages
     ])
+    
+class IsTrainer(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and hasattr(request.user, 'profile')
+            and request.user.profile.role == 'trainer'
+        )
+
+
+class WorkoutPlanViewSet(viewsets.ModelViewSet):
+    """
+    Trainers can create/edit plans for users.
+    Users can list plans assigned to them.
+    Trainers can send plans via chat.
+    """
+    serializer_class = WorkoutPlanSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'send']:
+            return [IsAuthenticated(), IsTrainer()]
+        return [IsAuthenticated()]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.profile.role == 'trainer':
+            return WorkoutPlan.objects.filter(trainer=user)
+        return WorkoutPlan.objects.filter(user=user)
+
+    def perform_create(self, serializer):
+        serializer.save(trainer=self.request.user)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsTrainer])
+    def send(self, request, pk=None):
+        """
+        Send this workout plan to the assigned user via chat message
+        and broadcast via WebSocket.
+        """
+        plan = self.get_object()
+        target_user = plan.user
+        trainer = request.user
+
+        # Build formatted message
+        lines = [f"🏋️ Workout Plan: {plan.name}"]
+        if plan.description:
+            lines.append(plan.description)
+        for idx, ex in enumerate(plan.exercises.all(), start=1):
+            lines.append(f"{idx}. {ex.name} — {ex.recommended_sets} sets x {ex.recommended_reps} reps")
+        content = "\n".join(lines)
+
+        # Save to Message model
+        msg = Message.objects.create(sender=trainer, receiver=target_user, content=content)
+
+        # Ensure consistent group name with ChatConsumer
+        room_name = f"chat_{min(trainer.id, target_user.id)}_{max(trainer.id, target_user.id)}"
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            room_name,
+            {
+                "type": "chat_message",
+                "sender_id": trainer.id,
+                "receiver_id": target_user.id,
+                "content": content,
+                "timestamp": msg.timestamp.isoformat(),
+            }
+        )
+
+        return Response({'detail': 'Plan sent via chat.'}, status=status.HTTP_201_CREATED)
+        

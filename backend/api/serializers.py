@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
-    Exercise, WorkoutSession, WorkoutExerciseSet, UserProfile,
-    Diet, Recipe, RecipeStep, Ingredient, Workout,
-    WorkoutTracking, WorkoutPost, DietType
+    Exercise, WorkoutSession, WorkoutExerciseSet, WorkoutPlan, Workout, WorkoutTracking, WorkoutPost,
+    UserProfile,
+    Diet, Recipe, RecipeStep, Ingredient, DietType
 )
 
 # Basic User serializer
@@ -49,6 +49,41 @@ class RegistrationSerializer(serializers.ModelSerializer):
         return user
 
 # Exercise
+
+
+class ExerciseSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exercise
+        fields = ['id', 'name', 'target', 'difficulty', 'equipment']
+
+class WorkoutPlanSerializer(serializers.ModelSerializer):
+    trainer = serializers.StringRelatedField(read_only=True)
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(profile__role='user')
+    )
+    exercises = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Exercise.objects.all()
+    )
+
+    class Meta:
+        model = WorkoutPlan
+        fields = ['id', 'trainer', 'user', 'name', 'description', 'exercises', 'created_at']
+        read_only_fields = ['trainer', 'created_at']
+
+    def create(self, validated_data):
+        # Extract the trainer if it was passed in (by perform_create)
+        trainer = validated_data.pop('trainer', None) or self.context['request'].user
+
+        # Pop out exercises list
+        exercises = validated_data.pop('exercises', [])
+
+        # Create plan with a single trainer kwarg
+        plan = WorkoutPlan.objects.create(trainer=trainer, **validated_data)
+
+        # Assign exercises
+        plan.exercises.set(exercises)
+        return plan
+
 class ExerciseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exercise
