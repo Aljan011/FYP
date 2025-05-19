@@ -129,6 +129,16 @@ class WorkoutTracking(models.Model):
 
     def __str__(self):
         return f"Workout on {self.workout_date} by {self.user.username}"
+    
+class WorkoutPlanTemplate(models.Model):
+    trainer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='plan_templates')
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    exercises = models.ManyToManyField(Exercise, related_name='template_plans')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Template: {self.name} by {self.trainer.username}"
 
 
 class WorkoutPost(models.Model):

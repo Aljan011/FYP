@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
-    Exercise, WorkoutSession, WorkoutExerciseSet, WorkoutPlan, Workout, WorkoutTracking, WorkoutPost,
+    Exercise, WorkoutSession, WorkoutExerciseSet, WorkoutPlan, Workout, WorkoutTracking, WorkoutPost, WorkoutPlanTemplate,
     UserProfile,
     Diet, Recipe, RecipeStep, Ingredient, DietType
 )
@@ -184,6 +184,25 @@ class WorkoutPostSerializer(serializers.ModelSerializer):
             "total_exercises": session.total_exercises if session else None,
             "exercises": exercise_data
         }
+        
+class WorkoutPlanTemplateSerializer(serializers.ModelSerializer):
+    trainer = serializers.StringRelatedField(read_only=True)
+    exercises = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Exercise.objects.all()
+    )
+
+    class Meta:
+        model = WorkoutPlanTemplate
+        fields = ['id', 'trainer', 'name', 'description', 'exercises', 'created_at']
+        read_only_fields = ['trainer', 'created_at']
+
+    def create(self, validated_data):
+     exercises = validated_data.pop("exercises", [])
+     template = WorkoutPlanTemplate.objects.create(**validated_data)
+     template.exercises.set(exercises)
+     return template
+
+
 
 # Diet Type
 class DietTypeSerializer(serializers.ModelSerializer):

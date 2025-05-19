@@ -19,11 +19,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan
+from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan, WorkoutPlanTemplate
 from .serializers import (
     ExerciseSerializer, WorkoutSerializer,
     WorkoutSessionSerializer, 
-    WorkoutExerciseSetSerializer, WorkoutPostSerializer, WorkoutPlanSerializer,
+    WorkoutExerciseSetSerializer, WorkoutPostSerializer, WorkoutPlanSerializer, WorkoutPlanTemplateSerializer,
     DietSerializer,
     RecipeSerializer, RecipeDetailSerializer, 
     RegistrationSerializer, UserSerializer
@@ -454,7 +454,7 @@ class WorkoutPlanViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy', 'send']:
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'send', 'assign_from_template']:
             return [IsAuthenticated(), IsTrainer()]
         return [IsAuthenticated()]
 
@@ -503,4 +503,94 @@ class WorkoutPlanViewSet(viewsets.ModelViewSet):
         )
 
         return Response({'detail': 'Plan sent via chat.'}, status=status.HTTP_201_CREATED)
-        
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated, IsTrainer])
+    def assign_from_template(self, request):
+        """
+        Assign a plan to a user based on a saved template
+        and send it via chat immediately.
+        """
+        template_id = request.data.get("template_id")
+        user_id = request.data.get("user_id")
+
+        if not template_id or not user_id:
+            return Response({"error": "Missing template_id or user_id"}, status=400)
+
+        try:
+            template = WorkoutPlanTemplate.objects.get(id=template_id, trainer=request.user)
+            user = User.objects.get(id=user_id)
+        except WorkoutPlanTemplate.DoesNotExist:
+            return Response({"error": "Template not found"}, status=404)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+        # Create a new WorkoutPlan from the template
+        plan = WorkoutPlan.objects.create(
+            trainer=request.user,
+            user=user,
+            name=template.name,
+            description=template.description
+        )
+        plan.exercises.set(template.exercises.all())
+        plan.save()
+
+        # Format the message content
+        lines = [f"🏋️ Workout Plan: {plan.name}"]
+        if plan.description:
+            lines.append(plan.description)
+        for idx, ex in enumerate(plan.exercises.all(), start=1):
+            lines.append(f"{idx}. {ex.name} — {ex.recommended_sets} sets x {ex.recommended_reps} reps")
+        content = "\n".join(lines)
+
+        # Send it via chat
+        msg = Message.objects.create(sender=request.user, receiver=user, content=content)
+        room_name = f"chat_{min(request.user.id, user.id)}_{max(request.user.id, user.id)}"
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            room_name,
+            {
+                "type": "chat_message",
+                "sender_id": request.user.id,
+                "receiver_id": user.id,
+                "content": content,
+                "timestamp": msg.timestamp.isoformat(),
+            }
+        )
+
+        return Response({"detail": "Plan assigned and sent via chat."}, status=status.HTTP_201_CREATED)
+
+
+
+class WorkoutPlanTemplateViewSet(viewsets.ModelViewSet):
+    serializer_class = WorkoutPlanTemplateSerializer
+    permission_classes = [IsAuthenticated, IsTrainer]
+
+    def get_queryset(self):
+        return WorkoutPlanTemplate.objects.filter(trainer=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(trainer=self.request.user)
+    
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated, IsTrainer])
+    def assign_from_template(self, request):
+     template_id = request.data.get("template_id")
+     user_id = request.data.get("user_id")
+
+     try:
+        template = WorkoutPlanTemplate.objects.get(id=template_id, trainer=request.user)
+        user = User.objects.get(id=user_id)
+     except (WorkoutPlanTemplate.DoesNotExist, User.DoesNotExist):
+        return Response({"error": "Template or user not found"}, status=404)
+
+     plan = WorkoutPlan.objects.create(
+        trainer=request.user,
+        user=user,
+        name=template.name,
+        description=template.description
+    )
+     plan.exercises.set(template.exercises.all())
+     plan.save()
+
+     return Response({"message": "Plan assigned from template", "plan_id": plan.id}, status=201)
+
+    
