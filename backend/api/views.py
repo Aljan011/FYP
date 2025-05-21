@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.generics import CreateAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.utils.decorators import method_decorator
@@ -399,23 +399,39 @@ def chat_partners_for_user(request, user_id):
     except UserProfile.DoesNotExist:
         return Response({"detail": "UserProfile not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    # Fetch matching partners
+    # Fetch matching partners based on role
     if current_profile.role == 'user':
-        # Return trainers
-        profiles = UserProfile.objects.select_related('user').filter(role='trainer').exclude(user__id=user_id)
+        profiles = UserProfile.objects.select_related('user').filter(
+            role='trainer'
+        ).exclude(user__id=user_id)
     else:
-        # Return users
-        profiles = UserProfile.objects.select_related('user').filter(role='user').exclude(user__id=user_id)
+        profiles = UserProfile.objects.select_related('user').filter(
+            role='user'
+        ).exclude(user__id=user_id)
 
-    # Only include profiles where user exists and is active
-    chat_partners = [
-        {
+    # Annotate and sort by latest message
+    profiles = profiles.annotate(
+        last_msg_time=Max('user__sent_messages__timestamp')
+    ).order_by('-last_msg_time')
+
+    # Build response with unread message count
+    chat_partners = []
+    for profile in profiles:
+        if not profile.user.is_active:
+            continue
+
+        unread_count = Message.objects.filter(
+            sender=profile.user,
+            receiver__id=user_id,
+            is_seen=False
+        ).count()
+
+        chat_partners.append({
             "id": profile.user.id,
             "username": profile.user.username,
-            "role": profile.role  #  include role if needed by frontend
-        }
-        for profile in profiles if profile.user.is_active
-    ]
+            "role": profile.role,
+            "unread_count": unread_count
+        })
 
     return Response(chat_partners)
 
@@ -442,6 +458,25 @@ def get_chat_history(request, user_id, partner_id):
         }
         for msg in messages
     ])
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_messages_as_seen(request):
+    user_id = request.user.id
+    partner_id = request.data.get("partner_id")
+
+    if not partner_id:
+        return Response({"error": "Missing partner_id"}, status=400)
+
+    from .models import Message
+    Message.objects.filter(
+        sender_id=partner_id,
+        receiver_id=user_id,
+        is_seen=False
+    ).update(is_seen=True)
+
+    return Response({"message": "Messages marked as seen"})
+
     
 class IsTrainer(permissions.BasePermission):
     def has_permission(self, request, view):

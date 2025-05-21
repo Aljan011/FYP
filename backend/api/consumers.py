@@ -82,7 +82,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         sender = User.objects.get(id=sender_id)
         receiver = User.objects.get(id=receiver_id)
-        Message.objects.create(sender=sender, receiver=receiver, content=content)
+        Message.objects.create(sender=sender, receiver=receiver, content=content, is_seen=False)
 
     @database_sync_to_async
     def is_valid_pair(self, sender_id, receiver_id):

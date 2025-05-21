@@ -224,6 +224,7 @@ class Message(models.Model):
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     message_type = models.CharField(max_length=20, default="text")
+    is_seen = models.BooleanField(default=False) 
 
 
     def __str__(self):
