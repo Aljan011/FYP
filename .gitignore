@@ -64,3 +64,5 @@ Thumbs.db
 
 # Environment-specific files
 *.env
+
+commits.sh
