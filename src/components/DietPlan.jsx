@@ -2,22 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import '../css/DietPlan.css'; 
+import './DietDetail.jsx';
 
 const DietPlan = () => {
   const [dietPlan, setDietPlan] = useState([]);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+  const [diet, setDiet] = useState([]);
+
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark-mode", isDarkMode);
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(prevMode => !prevMode);
-  };
+  const toggleDarkMode = () => setIsDarkMode(prevMode => !prevMode);
 
-  // ✅ Move these functions outside of useEffect
+  //  Move these functions outside of useEffect
   const animateOnScroll = () => {
     const elements = document.querySelectorAll('.plan-card, .benefit-card, .testimonial-card, .section-header');
 
@@ -34,6 +35,12 @@ const DietPlan = () => {
       }
     });
   };
+
+   useEffect(() => {
+  if (diet) {
+    console.log("Diet image path:", diet.image);
+  }
+}, [diet]);
 
   const highlightNavLink = () => {
     const scrollPosition = window.scrollY;
@@ -53,9 +60,26 @@ const DietPlan = () => {
   };
 
   useEffect(() => {
-    axios.get("http://localhost:8000/api/diets/") // Adjust API URL
-      .then((response) => setDietPlan(response.data))
-      .catch((error) => console.error(error));
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      console.error("No token found!");
+      return;
+    }
+
+    console.log("Token being used:", token);
+
+    axios.get("http://localhost:8000/api/diets/", {
+      headers: {
+        Authorization: `Token ${token}`,
+      }
+    })
+    .then((response) => {
+      setDietPlan(response.data);
+    })
+    .catch((error) => {
+      console.error("Failed to fetch diets:", error);
+    });
   }, []);
 
   useEffect(() => {
@@ -88,8 +112,6 @@ const DietPlan = () => {
       window.removeEventListener('scroll', highlightNavLink);
     };
   }, []);
-    
-
     // Cleanup event listeners on unmount
     return (
       <>
@@ -103,11 +125,13 @@ const DietPlan = () => {
                                           <li><Link to="/UserDash" className="nav-link">Home</Link></li>
                                           <li><Link to="/workouts" className="nav-link">Track</Link></li>
                                           <li><Link to="/diet-plan" className="nav-link">Diets</Link></li>
-                                          <li><Link to="/signup" className="nav-link">Chat</Link></li>
+                                          <li><Link to="/chat" className="nav-link">Chat</Link></li>
                                       </ul>
             </div>
             <div className="nav-buttons">
-            <button onClick={toggleDarkMode}>Toggle Theme</button>
+            <button className="theme-toggle" onClick={toggleDarkMode}>
+              {isDarkMode ? '🌙' : '☀️'}
+            </button>
               {/* <a href="#signup" className="btn btn-primary">Login</a> */}
             </div>
             <div className="hamburger" id="hamburger">
@@ -121,6 +145,7 @@ const DietPlan = () => {
         <main>
           {/* Hero Section */}
           <section className="hero">
+            <div className="hero-overlay"></div>
             <div className="container">
               <div className="hero-content">
                 <span className="badge">Personalized Diet Plans</span>
@@ -148,7 +173,8 @@ const DietPlan = () => {
             </div>
           </section>
           
-          <section id="plans" className="plans">
+      {/* Diet Plans Section */}
+      <section id="plans" className="plans">
       <div className="container">
         <div className="section-header">
           <span className="badge">Featured Plans</span>
@@ -156,32 +182,42 @@ const DietPlan = () => {
           <p>Each plan is crafted by expert nutritionists to meet specific health goals while ensuring delicious, satisfying meals.</p>
           <div className="scroll-indicator">
             <span>Scroll to explore</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" stroke="currentColor">
               <path d="M12 5v14M19 12l-7 7-7-7"/>
             </svg>
           </div>
         </div>
-        
+
         <div className="plans-grid">
-        {dietPlan.map((diet) => (
-  <div className="plan-card" key={diet.id}>
-    <div className="plan-image">
-      <img src={diet.image_url || "https://via.placeholder.com/300"} alt={diet.name} />
-    </div>
-    <div className="plan-content">
-      <h3>{diet.name}</h3>
-      <p>{diet.description}</p>
-      <ul className="benefits-list">
-        {diet.benefits?.map((benefit, index) => (
-          <li key={index}>{benefit}</li>
-        ))}
-      </ul>
-      <div className="plan-footer">
-        <Link to={`/diet-plans/${diet.id}`} className="arrow-button primary">View Plan</Link>
-      </div>
-    </div>
-  </div>
-))}
+          {dietPlan.map((diet) => (
+            <div className="plan-card" key={diet.slug}>
+              <div className="plan-image">
+                <img
+  src={diet.image ? diet.image : "/fallback.jpg"}
+  alt={diet.name}
+  onError={(e) => {
+    e.target.onerror = null;
+    e.target.src = "/fallback.jpg";
+  }}
+/>
+
+              </div>
+              <div className="plan-content">
+                <h3>{diet.name}</h3>
+                <p>{diet.description}</p>
+                {diet.benefits && (
+                  <ul className="benefits-list">
+                    {diet.benefits.split('\n').map((benefit, i) => (
+                      <li key={i}>{benefit}</li>
+                    ))}
+                  </ul>
+                )}
+                <div className="plan-footer">
+                  <Link to={`/diet-plans/${diet.slug}`} className="arrow-button primary">View Plan</Link>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -247,87 +283,50 @@ const DietPlan = () => {
             </div>
           </section>
           
-          {/* CTA Section */}
-          <section className="cta">
-            <div className="container">
-              <div className="cta-card">
-                <span className="badge">Get Started Today</span>
-                <h2>Ready to Transform Your Health?</h2>
-                <p>Join thousands who have already changed their lives with our expert diet plans. Your journey to better health starts here.</p>
-                <div className="cta-buttons">
-                  <a href="#" className="button primary">Choose Your Plan</a>
-                  <a href="#" className="button outline">Talk to a Nutritionist</a>
-                </div>
-              </div>
-            </div>
-          </section>
         </main>
         
-        {/* Footer */}
-        <footer className="footer">
-          <div className="container">
-            <div className="footer-content">
-              <div className="footer-logo">
-                <a href="#"><strong>Dietary</strong>Pathway</a>
-                <p>Your path to better nutrition and health</p>
+       
+{/* Footer Section */}
+          <footer className="footer">
+            <div className="container">
+              <div className="footer-content">
+                <div className="footer-logo">
+                  <h2>GymFreak</h2>
+                  <p>Transform Your Fitness Journey</p>
+                </div>
+                <div className="footer-links">
+                  <div className="footer-column">
+                    <h3>Company</h3>
+                    <ul>
+                      <li><a href="#">About Us</a></li>
+                      <li><a href="#">Careers</a></li>
+                      <li><a href="#">Contact</a></li>
+                    </ul>
+                  </div>
+                  <div className="footer-column">
+                    <h3>Resources</h3>
+                    <ul>
+                      <li><a href="#">Blog</a></li>
+                      <li><a href="#">Guides</a></li>
+                      <li><a href="#">Support</a></li>
+                    </ul>
+                  </div>
+                  <div className="footer-column">
+                    <h3>Legal</h3>
+                    <ul>
+                      <li><a href="#">Privacy Policy</a></li>
+                      <li><a href="#">Terms of Service</a></li>
+                      <li><a href="#">Cookie Policy</a></li>
+                    </ul>
+                  </div>
+                </div>
               </div>
               
-              <div className="footer-links">
-                <div className="footer-column">
-                  <h4>Company</h4>
-                  <ul>
-                    <li><a href="#">About Us</a></li>
-                    <li><a href="#">Our Team</a></li>
-                    <li><a href="#">Careers</a></li>
-                    <li><a href="#">Contact</a></li>
-                  </ul>
-                </div>
-                
-                <div className="footer-column">
-                  <h4>Resources</h4>
-                  <ul>
-                    <li><a href="#">Diet Plans</a></li>
-                    <li><a href="#">Recipes</a></li>
-                    <li><a href="#">Nutrition Tips</a></li>
-                    <li><a href="#">Success Stories</a></li>
-                  </ul>
-                </div>
-                
-                <div className="footer-column">
-                  <h4>Legal</h4>
-                  <ul>
-                    <li><a href="#">Privacy Policy</a></li>
-                    <li><a href="#">Terms of Service</a></li>
-                    <li><a href="#">Cookie Policy</a></li>
-                  </ul>
-                </div>
-              </div>
             </div>
-            
             <div className="footer-bottom">
-              <p>&copy; {new Date().getFullYear()} DietaryPathway. All rights reserved.</p>
-              <div className="social-links">
-                <a href="#" aria-label="Facebook">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-                  </svg>
-                </a>
-                <a href="#" aria-label="Twitter">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path>
-                  </svg>
-                </a>
-                <a href="#" aria-label="Instagram">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-                  </svg>
-                </a>
+                <p>&copy; 2023 GymFreak. All rights reserved.</p>
               </div>
-            </div>
-          </div>
-        </footer>
+          </footer>
       </>
     );
 };

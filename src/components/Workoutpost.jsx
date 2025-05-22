@@ -332,7 +332,7 @@ const Workoutpost = () => {
                             <li><Link to="/UserDash" className="nav-link">Home</Link></li>
                             <li><Link to="/workouts" className="nav-link">Track</Link></li>
                             <li><Link to="/diet-plan" className="nav-link">Diets</Link></li>
-                            <li><Link to="/signup" className="nav-link">Chat</Link></li>
+                            <li><Link to="/chat" className="nav-link">Chat</Link></li>
                         </ul>
                     </div>
                     <div className="nav-buttons">

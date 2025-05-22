@@ -8,6 +8,8 @@ import AuthPage from "./components/signup.jsx";
 import UserProfile from "./components/UserProfile.jsx";
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import DietDetail from "./components/DietDetail.jsx";
+import ChatPage from "./components/ChatPage.jsx";
+import EditProfileForm from "./components/EditProfileForm.jsx";
 
 function App() {
     return (
@@ -16,9 +18,8 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<AuthPage />} />
                 <Route path="/signup" element={<AuthPage />} />
-                <Route path="/diet-detail/:id" element={<DietDetail />} />
 
-                {/* Wrap protected components with ProtectedRoute in element prop */}
+                {/* Protected Routes */}
                 <Route
                     path="/UserDash"
                     element={
@@ -43,6 +44,21 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
+                <Route 
+                     path="/chat" 
+                     element={
+                     <ProtectedRoute>
+                        <ChatPage />
+                        </ProtectedRoute>
+                        } 
+                        />
+
+<Route path="/diet-plans/:slug" element={
+  <ProtectedRoute>
+    <DietDetail />
+  </ProtectedRoute>
+} />
+
                 <Route
                     path="/profile"
                     element={
@@ -51,9 +67,19 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
+
+                <Route
+                    path="/profile/edit"
+                    element={
+                        <ProtectedRoute>
+                            <EditProfileForm />
+                        </ProtectedRoute>
+                    }
+                />
             </Routes>
         </Router>
     );
+    
 }
 
 export default App;

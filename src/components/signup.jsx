@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axiosInstance from '../axiosInstance';
-import '../css/signup.css';
-import { useLocation } from 'react-router-dom';
+import '../css/signup.css'; // Make sure to replace with your new CSS file
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -11,6 +10,7 @@ const AuthPage = () => {
   const [loginError, setLoginError] = useState(null);
   const [registrationError, setRegistrationError] = useState(null);
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [loginData, setLoginData] = useState({
     username: '',
@@ -23,23 +23,19 @@ const AuthPage = () => {
     password: '',
     confirmPassword: '',
     firstName: '',
-    lastName: ''
+    lastName: '',
+    role: 'user'
   });
 
-  // Check if the user is already logged in and redirect
+  // Check if user is already logged in
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token) {
-      // Check if the token is valid by making a request to the server
       axiosInstance.defaults.headers['Authorization'] = `Token ${token}`;
       axiosInstance.get('/profile/')
-        .then((response) => {
-          // If token is valid and profile is fetched, redirect to profile
-          navigate('/profile');
-        })
+        .then(() => navigate('/profile'))
         .catch((error) => {
-          console.error('Error fetching user profile:', error);
-          // If error occurs (e.g. token is invalid), remove token and do not redirect
+          console.error('Error fetching profile:', error);
           localStorage.removeItem('authToken');
         });
     }
@@ -48,59 +44,65 @@ const AuthPage = () => {
   const handleInputChange = (e, isLoginForm = true) => {
     const { name, value } = e.target;
     if (isLoginForm) {
-      setLoginData((prev) => ({ ...prev, [name]: value }));
+      setLoginData(prev => ({ ...prev, [name]: value }));
     } else {
-      setRegistrationData((prev) => ({ ...prev, [name]: value }));
+      setRegistrationData(prev => ({ ...prev, [name]: value }));
     }
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError(null);
-  
+    setIsLoading(true);
+
     try {
       const response = await axiosInstance.post('/login/', loginData);
       const data = response.data;
-  
+
       if (data.token) {
-        // Save token in localStorage
         localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', data.id);
+        localStorage.setItem('userRole', data.role);
         axiosInstance.defaults.headers['Authorization'] = `Token ${data.token}`;
-  
-        // Fetch the user profile to ensure the user is authorized
+
         const profileRes = await axiosInstance.get('/profile/');
         if (profileRes.status === 200) {
+          const role = profileRes.data.role;
+          localStorage.setItem('userRole', data.role);
           setLoginSuccess(true);
           setTimeout(() => {
-            // Redirect after successful login
-            const from = location.state?.from?.pathname || '/profile';
+            const from = location.state?.from?.pathname || '/UserDash';
             navigate(from, { replace: true });
           }, 1500);
         } else {
           setLoginError('Failed to retrieve user profile.');
+          setIsLoading(false);
         }
       } else {
         setLoginError('Login failed. No token received.');
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Login error:', error);
-      if (error.response && error.response.status === 403) {
+      if (error.response?.status === 403) {
         setLoginError('Your account is pending admin approval.');
       } else if (error.response?.data?.detail) {
         setLoginError(error.response.data.detail);
       } else {
         setLoginError('Network or server error. Please try again.');
       }
+      setIsLoading(false);
     }
   };
-  
 
   const handleRegistration = async (e) => {
     e.preventDefault();
     setRegistrationError(null);
+    setIsLoading(true);
 
     if (registrationData.password !== registrationData.confirmPassword) {
       setRegistrationError('Passwords do not match');
+      setIsLoading(false);
       return;
     }
 
@@ -113,82 +115,85 @@ const AuthPage = () => {
           email: registrationData.email,
           password: registrationData.password,
           first_name: registrationData.firstName,
-          last_name: registrationData.lastName
+          last_name: registrationData.lastName,
+          role: registrationData.role
         })
       });
 
       const data = await response.json();
       if (response.ok) {
-        setRegistrationError('Registration successful. Awaiting admin approval.');
+        setRegistrationError(null);
+        setLoginSuccess(true);
         setTimeout(() => {
           setIsLogin(true);
+          setLoginSuccess(false);
         }, 2000);
       } else {
         setRegistrationError(data.detail || 'Registration failed. Please try again.');
       }
+      setIsLoading(false);
     } catch (error) {
       console.error('Registration error:', error);
       setRegistrationError('Network error. Please try again.');
+      setIsLoading(false);
     }
-  };
-
-  const successMessageStyle = {
-    padding: '15px 20px',
-    backgroundColor: '#4CAF50',
-    color: 'white',
-    borderRadius: '5px',
-    textAlign: 'center',
-    marginBottom: '20px',
-    fontWeight: 'bold',
-    animation: 'fadeIn 0.5s'
   };
 
   return (
     <div className="auth-container">
       <div className="auth-wrapper">
-        {/* Success Message */}
-        {loginSuccess && (
-          <div style={successMessageStyle} className="success-message">
-            Login Successful! Redirecting to Home Page...
-          </div>
-        )}
-
+        {/* Brand Logo Position (you can add your logo here) */}
         <div className="auth-form">
+          <svg className="brand-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.5 17.5L7.5 16.5M17.5 6.5L16.5 7.5M7.5 7.5L6.5 6.5M16.5 16.5L17.5 17.5M12 3V4M12 20V21M3 12H4M20 12H21M7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17C9.24 17 7 14.76 7 12Z" 
+                  stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          
           <h2 className="auth-header">
-            {isLogin ? 'Login to GymFreak' : 'Create Your Account'}
+            {isLogin ? 'Welcome to GymFreak' : 'Join GymFreak'}
           </h2>
+
+          {loginSuccess && (
+            <div className="success-message">
+              {isLogin ? 'Login successful! Redirecting...' : 'Registration successful! Please log in.'}
+            </div>
+          )}
 
           {isLogin ? (
             <form onSubmit={handleLogin}>
               <div className="form-group">
-                <label htmlFor="username" className="form-label">Username</label>
+                <label htmlFor="username" className="form-label" style={{color: '#111'}}>Username</label>
                 <input
                   type="text"
                   name="username"
+                  id="username"
                   value={loginData.username}
                   onChange={(e) => handleInputChange(e, true)}
                   required
                   placeholder="Enter your username"
                   className="form-input"
-                  disabled={loginSuccess}
+                  style={{color: '#111'}}
+                  disabled={loginSuccess || isLoading}
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="password" className="form-label">Password</label>
+                <label htmlFor="password" className="form-label" style={{color: '#111'}}>Password</label>
                 <input
                   type="password"
                   name="password"
+                  id="password"
                   value={loginData.password}
                   onChange={(e) => handleInputChange(e, true)}
                   required
+                  style={{color: '#111'}}
                   placeholder="Enter your password"
                   className="form-input"
-                  disabled={loginSuccess}
+                  disabled={loginSuccess || isLoading}
                 />
               </div>
-              {loginError && <p className="error-message">{loginError}</p>}
-              <button type="submit" className="submit-button" disabled={loginSuccess}>
-                {loginSuccess ? 'Logging in...' : 'Login'}
+              {loginError && <div className="error-message">{loginError}</div>}
+              <button type="submit" className="submit-button" disabled={loginSuccess || isLoading}>
+                {isLoading ? 'Logging in...' : 'Login'}
               </button>
             </form>
           ) : (
@@ -199,11 +204,13 @@ const AuthPage = () => {
                   <input
                     type="text"
                     name="firstName"
+                    id="firstName"
                     value={registrationData.firstName}
                     onChange={(e) => handleInputChange(e, false)}
                     required
                     placeholder="First Name"
                     className="form-input"
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="form-group">
@@ -211,11 +218,13 @@ const AuthPage = () => {
                   <input
                     type="text"
                     name="lastName"
+                    id="lastName"
                     value={registrationData.lastName}
                     onChange={(e) => handleInputChange(e, false)}
                     required
                     placeholder="Last Name"
                     className="form-input"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -224,11 +233,13 @@ const AuthPage = () => {
                 <input
                   type="text"
                   name="username"
+                  id="reg-username"
                   value={registrationData.username}
                   onChange={(e) => handleInputChange(e, false)}
                   required
                   placeholder="Choose a username"
                   className="form-input"
+                  disabled={isLoading}
                 />
               </div>
               <div className="form-group">
@@ -236,11 +247,13 @@ const AuthPage = () => {
                 <input
                   type="email"
                   name="email"
+                  id="email"
                   value={registrationData.email}
                   onChange={(e) => handleInputChange(e, false)}
                   required
                   placeholder="Enter your email"
                   className="form-input"
+                  disabled={isLoading}
                 />
               </div>
               <div className="form-group">
@@ -248,11 +261,13 @@ const AuthPage = () => {
                 <input
                   type="password"
                   name="password"
+                  id="reg-password"
                   value={registrationData.password}
                   onChange={(e) => handleInputChange(e, false)}
                   required
                   placeholder="Create a password"
                   className="form-input"
+                  disabled={isLoading}
                 />
               </div>
               <div className="form-group">
@@ -260,23 +275,43 @@ const AuthPage = () => {
                 <input
                   type="password"
                   name="confirmPassword"
+                  id="confirmPassword"
                   value={registrationData.confirmPassword}
                   onChange={(e) => handleInputChange(e, false)}
                   required
                   placeholder="Confirm your password"
                   className="form-input"
+                  disabled={isLoading}
                 />
               </div>
-              {registrationError && <p className="error-message">{registrationError}</p>}
-              <button type="submit" className="submit-button">
-                Register
+
+              <div className="form-group">
+                <label htmlFor="role" className="form-label">Register as:</label>
+                <select
+                  name="role"
+                  id="role"
+                  value={registrationData.role}
+                  onChange={(e) => handleInputChange(e, false)}
+                  className="form-input"
+                  required
+                  disabled={isLoading}
+                >
+                  <option value="user">User</option>
+                  <option value="trainer">Trainer</option>
+                </select>
+              </div>
+
+              {registrationError && <div className="error-message">{registrationError}</div>}
+              <button type="submit" className="submit-button" disabled={isLoading}>
+                {isLoading ? 'Registering...' : 'Create Account'}
               </button>
             </form>
           )}
+
+          <p className="toggle-form" onClick={() => !isLoading && setIsLogin(!isLogin)}>
+            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Log in"}
+          </p>
         </div>
-        <p className="toggle-form" onClick={() => setIsLogin(!isLogin)}>
-          {isLogin ? "Don't have an account? Register here." : "Already have an account? Login here."}
-        </p>
       </div>
     </div>
   );
