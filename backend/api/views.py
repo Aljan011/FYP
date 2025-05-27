@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.generics import CreateAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.utils.decorators import method_decorator
@@ -78,9 +78,7 @@ class RegisterUserView(CreateAPIView):
         user.is_active = False  # Needs admin approval
         user.save()
 
-        # Assign role to the profile (created via signal)
-        user.profile.role = role
-        user.profile.save()
+        UserProfile.objects.get_or_create(user=user, defaults={'role': role})
 
         return Response({
             "message": "User registered successfully. Awaiting admin approval.",
@@ -108,19 +106,20 @@ class UserProfileView(APIView):
         profile, created = UserProfile.objects.get_or_create(user=user)
         
         user_data = {
-            "username": user.username,
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "profile": {
-                "bio": profile.bio,
-                "date_of_birth": profile.date_of_birth,
-                "phone_number": profile.phone_number,
-                "address": profile.address,
-                "favorite_exercises": profile.favorite_exercises,
-                "preferred_diet_plan": profile.preferred_diet_plan,
-            }
-        }
+    "username": user.username,
+    "email": user.email,
+    "first_name": user.first_name,
+    "last_name": user.last_name,
+    "role": profile.role,  # ✅ Add this line
+    "profile": {
+        "bio": profile.bio,
+        "date_of_birth": profile.date_of_birth,
+        "phone_number": profile.phone_number,
+        "address": profile.address,
+        "favorite_exercises": profile.favorite_exercises,
+        "preferred_diet_plan": profile.preferred_diet_plan,
+    }
+}
         
         if profile.profile_picture:
             user_data["profile"]["profile_picture"] = profile.profile_picture.url
@@ -396,22 +395,46 @@ class RecipeViewSet(viewsets.ReadOnlyModelViewSet):
 @permission_classes([IsAuthenticated])
 def chat_partners_for_user(request, user_id):
     try:
-        current_profile = UserProfile.objects.get(user__id=user_id)
+        current_profile = UserProfile.objects.select_related('user').get(user__id=user_id)
     except UserProfile.DoesNotExist:
         return Response({"detail": "UserProfile not found."}, status=status.HTTP_404_NOT_FOUND)
 
+    # Fetch matching partners based on role
     if current_profile.role == 'user':
-        # If current user is a normal user → fetch all trainers
-        profiles = UserProfile.objects.filter(role='trainer').exclude(user__id=user_id)
+        profiles = UserProfile.objects.select_related('user').filter(
+            role='trainer'
+        ).exclude(user__id=user_id)
     else:
-        # If current user is a trainer → fetch all normal users
-        profiles = UserProfile.objects.filter(role='user').exclude(user__id=user_id)
+        profiles = UserProfile.objects.select_related('user').filter(
+            role='user'
+        ).exclude(user__id=user_id)
 
-    chat_partners = [
-        {"id": profile.user.id, "username": profile.user.username}
-        for profile in profiles
-    ]
+    # Annotate and sort by latest message
+    profiles = profiles.annotate(
+        last_msg_time=Max('user__sent_messages__timestamp')
+    ).order_by('-last_msg_time')
+
+    # Build response with unread message count
+    chat_partners = []
+    for profile in profiles:
+        if not profile.user.is_active:
+            continue
+
+        unread_count = Message.objects.filter(
+            sender=profile.user,
+            receiver__id=user_id,
+            is_seen=False
+        ).count()
+
+        chat_partners.append({
+            "id": profile.user.id,
+            "username": profile.user.username,
+            "role": profile.role,
+            "unread_count": unread_count
+        })
+
     return Response(chat_partners)
+
 
 
 @api_view(['GET'])
@@ -430,10 +453,30 @@ def get_chat_history(request, user_id, partner_id):
             "sender_id": msg.sender.id,
             "receiver_id": msg.receiver.id,
             "content": msg.content,
-            "timestamp": msg.timestamp
+            "timestamp": msg.timestamp,
+            "message_type": msg.message_type  # ✅ critical for plan_card detection
         }
         for msg in messages
     ])
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_messages_as_seen(request):
+    user_id = request.user.id
+    partner_id = request.data.get("partner_id")
+
+    if not partner_id:
+        return Response({"error": "Missing partner_id"}, status=400)
+
+    from .models import Message
+    Message.objects.filter(
+        sender_id=partner_id,
+        receiver_id=user_id,
+        is_seen=False
+    ).update(is_seen=True)
+
+    return Response({"message": "Messages marked as seen"})
+
     
 class IsTrainer(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -442,6 +485,7 @@ class IsTrainer(permissions.BasePermission):
             and hasattr(request.user, 'profile')
             and request.user.profile.role == 'trainer'
         )
+
 
 
 class WorkoutPlanViewSet(viewsets.ModelViewSet):
@@ -485,10 +529,15 @@ class WorkoutPlanViewSet(viewsets.ModelViewSet):
             lines.append(f"{idx}. {ex.name} — {ex.recommended_sets} sets x {ex.recommended_reps} reps")
         content = "\n".join(lines)
 
-        # Save to Message model
-        msg = Message.objects.create(sender=trainer, receiver=target_user, content=content)
+        # Save message with type
+        msg = Message.objects.create(
+            sender=trainer,
+            receiver=target_user,
+            content=content,
+            message_type="plan_card"
+        )
 
-        # Ensure consistent group name with ChatConsumer
+        # Send via WebSocket
         room_name = f"chat_{min(trainer.id, target_user.id)}_{max(trainer.id, target_user.id)}"
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
@@ -499,6 +548,7 @@ class WorkoutPlanViewSet(viewsets.ModelViewSet):
                 "receiver_id": target_user.id,
                 "content": content,
                 "timestamp": msg.timestamp.isoformat(),
+                "message_type": "plan_card",
             }
         )
 
@@ -542,8 +592,15 @@ class WorkoutPlanViewSet(viewsets.ModelViewSet):
             lines.append(f"{idx}. {ex.name} — {ex.recommended_sets} sets x {ex.recommended_reps} reps")
         content = "\n".join(lines)
 
-        # Send it via chat
-        msg = Message.objects.create(sender=request.user, receiver=user, content=content)
+        # Save message with type
+        msg = Message.objects.create(
+            sender=request.user,
+            receiver=user,
+            content=content,
+            message_type="plan_card"
+        )
+
+        # Send via WebSocket
         room_name = f"chat_{min(request.user.id, user.id)}_{max(request.user.id, user.id)}"
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
@@ -554,6 +611,7 @@ class WorkoutPlanViewSet(viewsets.ModelViewSet):
                 "receiver_id": user.id,
                 "content": content,
                 "timestamp": msg.timestamp.isoformat(),
+                "message_type": "plan_card",
             }
         )
 

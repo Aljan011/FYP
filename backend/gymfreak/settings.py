@@ -35,6 +35,7 @@ CSRF_COOKIE_HTTPONLY = False  # Allow frontend (JS) to read CSRF token if needed
 # Application definition
 INSTALLED_APPS = [
     'channels',
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

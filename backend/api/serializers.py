@@ -222,10 +222,23 @@ class RecipeSerializer(serializers.ModelSerializer):
 class DietSerializer(serializers.ModelSerializer):
     types = DietTypeSerializer(many=True, read_only=True)
     recipes = RecipeSerializer(many=True, read_only=True)
+    image = serializers.ImageField(read_only=True)
 
     class Meta:
         model = Diet
-        fields = '__all__'
+        fields = [
+            'id',
+            'name',
+            'description',
+            'protein_ratio',
+            'carb_ratio',
+            'fat_ratio',
+            'benefits',
+            'image',
+            'slug',
+            'types',
+            'recipes'
+        ]
         read_only_fields = ['id', 'user']
 
 # Recipe Step

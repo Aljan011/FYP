@@ -46,6 +46,7 @@ urlpatterns = [
     #chat urls
     path('chat-partners-for-user/<int:user_id>/', chat_partners_for_user),
     path('chat-history/<int:user_id>/<int:partner_id>/', get_chat_history),
+    path("chat/mark-seen/", views.mark_messages_as_seen),
 
 
 
