@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
     Exercise, WorkoutSession, WorkoutExerciseSet, WorkoutPlan, Workout, WorkoutTracking, WorkoutPost, WorkoutPlanTemplate,
-    UserProfile,
+    UserProfile, TrainerReview,
     Diet, Recipe, RecipeStep, Ingredient, DietType
 )
 
@@ -21,13 +21,19 @@ class RegistrationSerializer(serializers.ModelSerializer):
     address = serializers.CharField(required=False, allow_blank=True)
     favorite_exercises = serializers.CharField(required=False, allow_blank=True)
     preferred_diet_plan = serializers.CharField(required=False, allow_blank=True)
+    
+    # 🔥 Add new fields
+    certifications = serializers.CharField(required=False, allow_blank=True)
+    experience_years = serializers.IntegerField(required=False)
+    specialties = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = [
             "username", "email", "password",
             "bio", "date_of_birth", "phone_number",
-            "address", "favorite_exercises", "preferred_diet_plan"
+            "address", "favorite_exercises", "preferred_diet_plan",
+            "certifications", "experience_years", "specialties"
         ]
         extra_kwargs = {"password": {"write_only": True}}
 
@@ -39,6 +45,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
             'address': validated_data.pop('address', ''),
             'favorite_exercises': validated_data.pop('favorite_exercises', ''),
             'preferred_diet_plan': validated_data.pop('preferred_diet_plan', ''),
+            'certifications': validated_data.pop('certifications', ''),
+            'experience_years': validated_data.pop('experience_years', None),
+            'specialties': validated_data.pop('specialties', ''),
         }
 
         user = User.objects.create_user(**validated_data)
@@ -47,6 +56,30 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
         UserProfile.objects.create(user=user, **profile_data)
         return user
+    
+# Trainer Review Serializer    
+
+class TrainerReviewSerializer(serializers.ModelSerializer):
+    reviewer = serializers.ReadOnlyField(source='reviewer.username')
+    trainer = serializers.ReadOnlyField(source='trainer.id')
+
+    class Meta:
+        model = TrainerReview
+        fields = ['id', 'trainer', 'reviewer', 'rating', 'comment', 'created_at']
+        read_only_fields = ['id', 'reviewer', 'trainer', 'created_at']
+    
+    
+class TrainerProfilePublicSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username')
+    email = serializers.EmailField(source='user.email')
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            'username', 'email', 'profile_picture', 'bio',
+            'certifications', 'experience_years', 'specialties'
+        ]
+
 
 # Exercise
 

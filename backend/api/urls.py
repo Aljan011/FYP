@@ -4,7 +4,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from django.conf.urls.static import static
 from django.conf import settings
 from . import views
-from .views import RegisterUserView, ApproveUserView, LoginView, UserProfileView, DietViewSet, RecipeViewSet, WorkoutViewSet, UserWorkoutList, WorkoutPostListView, WorkoutPostCreateView, WorkoutPlanTemplateViewSet, WorkoutPlanViewSet, chat_partners_for_user, get_chat_history
+from .views import RegisterUserView, ApproveUserView, LoginView, UserProfileView, DietViewSet, RecipeViewSet, WorkoutViewSet, UserWorkoutList, WorkoutPostListView, WorkoutPostCreateView, WorkoutPlanTemplateViewSet, WorkoutPlanViewSet, chat_partners_for_user, get_chat_history, list_trainers, post_trainer_review
 
 # Initialize the router
 router = DefaultRouter()
@@ -48,6 +48,10 @@ urlpatterns = [
     path('chat-history/<int:user_id>/<int:partner_id>/', get_chat_history),
     path("chat/mark-seen/", views.mark_messages_as_seen),
 
+#trainer profile
+path("trainers/", views.list_trainers, name="trainer-list"),
+path("trainers/<int:trainer_id>/detail/", views.trainer_detail_with_reviews, name="trainer-detail"),
+path("trainers/<int:trainer_id>/reviews/post/", post_trainer_review, name="trainer-review-post"),
 
 
     # Django REST Framework's built-in login/logout endpoints

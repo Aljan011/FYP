@@ -31,9 +31,23 @@ class UserProfile(models.Model):
     address = models.TextField(blank=True, null=True)
     favorite_exercises = models.TextField(blank=True, null=True)
     preferred_diet_plan = models.TextField(blank=True, null=True)
+    certifications = models.TextField(blank=True, null=True)  # Comma-separated or Markdown
+    experience_years = models.PositiveIntegerField(null=True, blank=True)
+    specialties = models.TextField(blank=True, null=True)  # e.g., "Strength training, HIIT"
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+    
+#Trainer reviews
+class TrainerReview(models.Model):
+    trainer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='trainer_reviews')
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_reviews')
+    rating = models.IntegerField()  # 1–5
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('trainer', 'reviewer')  # Prevent multiple reviews per user
 
 
 class Exercise(models.Model):

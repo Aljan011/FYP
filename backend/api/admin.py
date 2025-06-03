@@ -6,13 +6,13 @@ from .models import (
     Diet, DietType, Recipe, RecipeStep, Ingredient, WorkoutExerciseSet
 )
 
-# ➕ Inline for UserProfile with role display
+#  Inline for UserProfile with role display
 class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
     verbose_name_plural = 'Profile'
 
-# ➕ Custom UserAdmin that includes UserProfile's role
+#  Custom UserAdmin that includes UserProfile's role
 class CustomUserAdmin(BaseUserAdmin):
     inlines = (UserProfileInline,)
     list_display = ('username', 'email', 'first_name', 'last_name', 'is_active', 'get_role')
@@ -32,6 +32,11 @@ admin.site.register(User, CustomUserAdmin)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'phone_number', 'date_of_birth')
     search_fields = ('user__username', 'phone_number')
+    fields = (
+        'user', 'role', 'profile_picture', 'bio', 'date_of_birth', 'phone_number', 
+        'address', 'favorite_exercises', 'preferred_diet_plan',
+        'certifications', 'experience_years', 'specialties'
+    )
 
 @admin.register(Exercise)
 class ExerciseAdmin(admin.ModelAdmin):

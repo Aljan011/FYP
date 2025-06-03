@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.generics import CreateAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from django.utils import timezone
-from django.db.models import Q, Max
+from django.db.models import Q, Max, Avg
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.utils.decorators import method_decorator
@@ -19,14 +19,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan, WorkoutPlanTemplate
+from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan, WorkoutPlanTemplate, TrainerReview
 from .serializers import (
     ExerciseSerializer, WorkoutSerializer,
     WorkoutSessionSerializer, 
     WorkoutExerciseSetSerializer, WorkoutPostSerializer, WorkoutPlanSerializer, WorkoutPlanTemplateSerializer,
     DietSerializer,
     RecipeSerializer, RecipeDetailSerializer, 
-    RegistrationSerializer, UserSerializer
+    RegistrationSerializer, UserSerializer, TrainerProfilePublicSerializer, TrainerReviewSerializer
 )
 
 
@@ -186,6 +186,89 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                 {"detail": "User not found"}, 
                 status=status.HTTP_404_NOT_FOUND
             )
+            
+#fetching trainer details
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def list_trainers(request):
+    trainers = UserProfile.objects.filter(role='trainer', user__is_active=True)
+    data = []
+    for profile in trainers:
+        rating = TrainerReview.objects.filter(trainer=profile.user).aggregate(avg=Avg('rating'))['avg'] or 0
+        data.append({
+            'id': profile.user.id,
+            'username': profile.user.username,
+            'profile_picture': profile.profile_picture.url if profile.profile_picture else None,
+            'average_rating': round(rating, 2),
+        })
+    return Response(data)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def trainer_public_profile(request, trainer_id):
+    try:
+        profile = UserProfile.objects.select_related('user').get(user__id=trainer_id, role='trainer')
+    except UserProfile.DoesNotExist:
+        return Response({"error": "Trainer not found"}, status=404)
+
+    serializer = TrainerProfilePublicSerializer(profile)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def trainer_detail_with_reviews(request, trainer_id):
+    try:
+        profile = UserProfile.objects.select_related('user').get(user__id=trainer_id, role='trainer')
+    except UserProfile.DoesNotExist:
+        return Response({"error": "Trainer not found"}, status=404)
+
+    profile_data = {
+        "id": profile.user.id,
+        "username": profile.user.username,
+        "email": profile.user.email,
+        "profile_picture": profile.profile_picture.url if profile.profile_picture else None,
+        "bio": profile.bio,
+        "experience_years": profile.experience_years,
+        "specialties": profile.specialties,
+        "certifications": profile.certifications,
+    }
+
+    # Get reviews
+    reviews = TrainerReview.objects.filter(trainer_id=trainer_id)
+    avg_rating = reviews.aggregate(avg=Avg('rating'))['avg'] or 0
+    reviews_data = TrainerReviewSerializer(reviews, many=True).data
+
+    return Response({
+        "trainer": profile_data,
+        "reviews": reviews_data,
+        "average_rating": round(avg_rating, 2)
+    })
+
+
+    
+#post review of trainer
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def post_trainer_review(request, trainer_id):
+    if TrainerReview.objects.filter(trainer_id=trainer_id, reviewer=request.user).exists():
+        return Response({'error': 'You already reviewed this trainer.'}, status=400)
+
+    serializer = TrainerReviewSerializer(data=request.data)
+    if serializer.is_valid():
+        trainer = get_object_or_404(User, id=trainer_id)
+        serializer.save(reviewer=request.user, trainer=trainer)
+        return Response(serializer.data, status=201)
+
+    # Print serializer validation errors
+    print("Validation errors:", serializer.errors)
+    return Response(serializer.errors, status=400)
+
+
+
+
+
+    
+
 
 # ✅ EXERCISE VIEWSET (Public Access)
 
@@ -238,7 +321,7 @@ class UserWorkoutList(APIView):
         return Response(serializer.data)
 
 
-# ✅ WORKOUT SESSION VIEWSET
+#  WORKOUT SESSION VIEWSET
      """
     The code defines viewsets for managing workout sessions and exercise sets, including actions to add
     exercise sets and finish a workout session.
@@ -299,7 +382,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
             workout_session.notes = notes
         workout_session.save()
 
-        # 💥 Create a Workout entry
+        #  Create a Workout entry
         workout = Workout.objects.create(
             user=request.user,
             title=f"Workout on {workout_session.started_at.strftime('%Y-%m-%d')}",
@@ -308,13 +391,13 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
             notes=notes,
         )
 
-        # ✅ Add exercises
+        #  Add exercises
         exercises = Exercise.objects.filter(
             id__in=workout_session.exercise_sets.values_list('exercise_id', flat=True)
         ).distinct()
         workout.exercises.set(exercises)
 
-        # ✅ Add sets
+        #  Add sets
         sets = []
         for exercise_set in workout_session.exercise_sets.all():
             sets.append({
