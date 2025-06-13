@@ -1,0 +1,183 @@
+/* --- BACKDROP --- */
+.plan-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+/* --- MODAL CORE --- */
+.plan-modal {
+  width: 95%;
+  max-width: 700px;
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  overflow-y: auto;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
+  font-family: "Segoe UI", sans-serif;
+  animation: scaleIn 0.3s ease;
+}
+
+.plan-modal h2 {
+  font-size: 1.8rem;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* --- FORM FIELDS --- */
+.template-section,
+.form-section {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.template-section select,
+.form-section input,
+.form-section textarea {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: 0.2s;
+}
+
+.form-section input:focus,
+.form-section textarea:focus,
+.template-section select:focus {
+  border-color: #4caf50;
+}
+
+/* --- SEARCH --- */
+.form-section input[type="text"] {
+  width: 100%;
+}
+
+/* --- EXERCISE PREVIEW --- */
+.selected-preview {
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+  background: #f0f4f8;
+  border-left: 4px solid #4caf50;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+/* --- EXERCISE GRID --- */
+.exercise-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+/* --- EXERCISE CARD --- */
+.exercise-item {
+  background: #fafafa;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e2e2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: 0.2s;
+}
+
+.exercise-item:hover {
+  background: #f5fdf5;
+  border-color: #b6e1bd;
+}
+
+.exercise-item label {
+  font-weight: 500;
+}
+
+.sets-reps {
+  display: flex;
+  gap: 12px;
+}
+
+.sets-reps input {
+  width: 60px;
+  padding: 6px 8px;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+/* --- BUTTONS --- */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.modal-actions button {
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s ease-in-out;
+}
+
+.modal-actions button:hover {
+  opacity: 0.9;
+}
+
+.modal-actions button:first-child {
+  background: #eee;
+}
+
+.modal-actions button:nth-child(2) {
+  background: #ffd966;
+}
+
+.modal-actions button:last-child {
+  background: #4caf50;
+  color: white;
+}
+
+/* --- TOAST (optional JS-driven) --- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #4caf50;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 1rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.3s ease;
+  z-index: 10000;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
