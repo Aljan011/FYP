@@ -19,12 +19,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan, WorkoutPlanTemplate, TrainerReview
+from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, SavedDietType, DietType, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan, WorkoutPlanTemplate, TrainerReview
 from .serializers import (
     ExerciseSerializer, WorkoutSerializer,
     WorkoutSessionSerializer, 
     WorkoutExerciseSetSerializer, WorkoutPostSerializer, WorkoutPlanSerializer, WorkoutPlanTemplateSerializer,
-    DietSerializer,
+    DietSerializer, SavedDietTypeSerializer,
     RecipeSerializer, RecipeDetailSerializer, 
     RegistrationSerializer, UserSerializer, TrainerProfilePublicSerializer, TrainerReviewSerializer
 )
@@ -474,6 +474,39 @@ class RecipeViewSet(viewsets.ReadOnlyModelViewSet):
             return Response(serializer.data)
         return Response({"error": "Diet ID parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
     
+#  SAVED DIET TYPE VIEWSET
+@api_view(['GET', 'POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def saved_diet_types(request):
+    user = request.user
+
+    if request.method == 'GET':
+        saved = SavedDietType.objects.filter(user=user)
+        serializer = SavedDietTypeSerializer(saved, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        diet_type_id = request.data.get('diet_type_id')
+        if not diet_type_id:
+            return Response({"error": "Missing diet_type_id"}, status=400)
+
+        diet_type = DietType.objects.get(id=diet_type_id)
+        obj, created = SavedDietType.objects.get_or_create(user=user, diet_type=diet_type)
+        if created:
+            return Response({"message": "Diet type saved successfully"})
+        else:
+            return Response({"message": "Already saved"})
+
+    elif request.method == 'DELETE':
+        diet_type_id = request.data.get('diet_type_id')
+        try:
+            saved = SavedDietType.objects.get(user=user, diet_type_id=diet_type_id)
+            saved.delete()
+            return Response({"message": "Deleted from saved"})
+        except SavedDietType.DoesNotExist:
+            return Response({"error": "Not found"}, status=404)
+    
+#  CHAT VIEWS
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def chat_partners_for_user(request, user_id):

@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from .models import (
     Exercise, WorkoutSession, WorkoutExerciseSet, WorkoutPlan, Workout, WorkoutTracking, WorkoutPost, WorkoutPlanTemplate,
     UserProfile, TrainerReview,
-    Diet, Recipe, RecipeStep, Ingredient, DietType
+    Diet, Recipe, RecipeStep, Ingredient, DietType, SavedDietType
 )
 
 # Basic User serializer
@@ -273,6 +273,11 @@ class DietSerializer(serializers.ModelSerializer):
             'recipes'
         ]
         read_only_fields = ['id', 'user']
+
+class SavedDietTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SavedDietType
+        fields = ['id', 'diet_type', 'saved_at']
 
 # Recipe Step
 class RecipeStepSerializer(serializers.ModelSerializer):

@@ -192,6 +192,17 @@ class DietType(models.Model):
 
     def __str__(self):
         return f"{self.diet.name} - {self.name}"
+    
+class SavedDietType(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='saved_diet_types')
+    diet_type = models.ForeignKey(DietType, on_delete=models.CASCADE, related_name='saved_by_users')
+    saved_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'diet_type')  # prevent duplicate saves
+
+    def __str__(self):
+        return f"{self.user.username} saved {self.diet_type.name}"
 
 class Recipe(models.Model):
     title = models.CharField(max_length=200)

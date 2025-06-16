@@ -223,16 +223,18 @@ body {
   border-radius: 2px;
 }
 
-/* Hero Section - Enhanced with better animations and effects */
+/* Hero Section - Performance Optimized */
 .dp-hero {
   position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg, #0066cc 0%, #004499 30%, #002266 70%, #001144 100%);
+  background: linear-gradient(135deg, #0066cc 0%, #004499 50%, #002266 100%);
   overflow: hidden;
+  transform: translateZ(0); /* Create stacking context for better performance */
 }
 
+/* Simplified background pattern for better performance */
 .dp-hero::before {
   content: '';
   position: absolute;
@@ -240,40 +242,11 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
-  opacity: 0.4;
-  animation: float 20s ease-in-out infinite;
-}
-
-.dp-hero::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-  animation: pulse 15s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(1deg); }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.1; transform: scale(1.1); }
-}
-
-.dp-hero-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 102, 204, 0.15);
-  backdrop-filter: blur(1px);
+  background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 50%),
+                    radial-gradient(circle at 40% 60%, rgba(255,255,255,0.08) 0%, transparent 50%);
+  opacity: 0.6;
+  will-change: opacity;
 }
 
 .dp-hero-content {
@@ -283,13 +256,13 @@ body {
   max-width: 900px;
   margin: 0 auto;
   padding: 2rem;
-  animation: fadeInUp 1s ease-out;
+  animation: fadeInUp 0.8s ease-out;
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(50px);
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
@@ -306,7 +279,7 @@ body {
   font-size: 0.95rem;
   font-weight: 600;
   margin-bottom: 2rem;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   transition: var(--transition);
   letter-spacing: 0.5px;
@@ -395,7 +368,7 @@ body {
   background: rgba(255, 255, 255, 0.15);
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(5px);
 }
 
 .dp-button.dp-secondary:hover {
@@ -404,7 +377,7 @@ body {
   transform: translateY(-3px);
 }
 
-/* Diet Plans Section - Enhanced with better styling */
+/* Diet Plans Section */
 .dp-plans {
   padding: 120px 0;
   background: var(--off-white);
@@ -451,7 +424,7 @@ body {
   line-height: 1.6;
 }
 
-/* Tab Navigation - Fixed active tab visibility */
+/* Tab Navigation */
 .dp-tab-navigation {
   display: flex;
   justify-content: center;
@@ -480,6 +453,7 @@ body {
   position: relative;
   overflow: hidden;
   font-size: 1rem;
+  z-index: 1;
 }
 
 .dp-tab-button::before {
@@ -492,12 +466,13 @@ body {
   background: var(--gradient-primary);
   transform: translateX(-100%);
   transition: var(--transition);
-  z-index: 0;
+  z-index: -1;
+  border-radius: var(--border-radius);
 }
 
 .dp-tab-button span {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .dp-tab-button.dp-tab-active {
@@ -522,7 +497,7 @@ body {
   width: 100%;
 }
 
-/* Plans Grid - Enhanced */
+/* Plans Grid */
 .dp-plans-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -681,7 +656,7 @@ body {
   border: 1px solid rgba(0, 102, 204, 0.2);
 }
 
-/* Diet Detail Container - Enhanced */
+/* Diet Detail Container */
 .dp-diet-detail-container {
   background: var(--pure-white);
   border-radius: var(--border-radius-large);
@@ -805,6 +780,7 @@ body {
   gap: 2rem;
 }
 
+/* Enhanced Diet Type Card with Fixed Save Button */
 .dp-diet-type-card {
   background: var(--pure-white);
   border: 2px solid var(--light-blue);
@@ -814,6 +790,10 @@ body {
   transition: var(--transition);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+  max-height: 400px;
 }
 
 .dp-diet-type-card::before {
@@ -826,6 +806,7 @@ body {
   background: var(--gradient-light);
   opacity: 0;
   transition: var(--transition);
+  z-index: 0;
 }
 
 .dp-diet-type-card:hover {
@@ -838,28 +819,79 @@ body {
   opacity: 1;
 }
 
+/* Diet Type Card Header */
+.dp-diet-type-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 2;
+}
+
 .dp-diet-type-card h4 {
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 1.5rem;
+  flex: 1;
+  margin-right: 1rem;
+}
+
+/* Enhanced Save Button - Always Visible */
+.dp-save-button {
+  background: var(--primary-blue);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  z-index: 10;
   position: relative;
-  z-index: 1;
+}
+
+.dp-save-button:hover {
+  background: var(--secondary-blue);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-light);
+}
+
+.dp-save-button.saved {
+  background: var(--accent-blue);
+  color: white;
+}
+
+.dp-save-button.saved:hover {
+  background: #ff6b6b;
+  color: white;
+}
+
+/* Diet Type Info Container */
+.dp-diet-type-info-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+  overflow-y: auto;
+  max-height: 250px;
 }
 
 .dp-diet-type-info {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  position: relative;
-  z-index: 1;
 }
 
 .dp-info-item {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 0.75rem 0;
   border-bottom: 1px solid var(--light-gray);
 }
@@ -871,19 +903,20 @@ body {
 .dp-info-label {
   font-weight: 600;
   color: var(--text-secondary);
-  min-width: 70px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .dp-info-value {
   color: var(--text-primary);
-  text-align: right;
-  flex: 1;
   font-size: 0.95rem;
   line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
-/* Empty State - Enhanced */
+/* Empty State */
 .dp-empty-state {
   text-align: center;
   padding: 5rem 2rem;
@@ -906,7 +939,7 @@ body {
   line-height: 1.6;
 }
 
-/* Modal Styles - Enhanced */
+/* Modal Styles */
 .dp-recipe-detail-modal {
   position: fixed;
   top: 0;

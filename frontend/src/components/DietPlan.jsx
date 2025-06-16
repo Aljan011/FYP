@@ -9,8 +9,6 @@ const DietPlan = () => {
   const [dietPlan, setDietPlan] = useState([]);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('theme') === 'dark');
-  
-  // New states for merged functionality
   const [activeTab, setActiveTab] = useState('browse'); // 'browse' or 'saved'
   const [savedDiets, setSavedDiets] = useState([]);
   const [selectedDiet, setSelectedDiet] = useState(null);
@@ -19,6 +17,8 @@ const DietPlan = () => {
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [recipes, setRecipes] = useState([]);
   const [error, setError] = useState(null);
+  const [savedTypeIds, setSavedTypeIds] = useState([]);
+
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark-mode", isDarkMode);
@@ -61,8 +61,8 @@ const DietPlan = () => {
       }
     });
   };
-
-  // Fetch all diets (browse tab)
+ //asdkjhdkfdfkjdsfhkljh
+  // Fetch all diets (browse tab) fdsfdf
   useEffect(() => {
     const token = localStorage.getItem("authToken");
 
@@ -88,20 +88,22 @@ const DietPlan = () => {
 
   // Fetch saved diets (saved tab)
   const fetchSavedDiets = async () => {
-    try {
-      const token = localStorage.getItem("authToken");
-      if (!token) return;
+  try {
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
 
-      const response = await axios.get("http://localhost:8000/api/saved-diets/", {
-        headers: {
-          Authorization: `Token ${token}`,
-        }
-      });
-      setSavedDiets(response.data);
-    } catch (error) {
-      console.error("Failed to fetch saved diets:", error);
-    }
-  };
+    const response = await axios.get("http://localhost:8000/api/saved-diets/", {
+      headers: {
+        Authorization: `Token ${token}`,
+      }
+    });
+
+    setSavedDiets(response.data);
+    setSavedTypeIds(response.data.map(item => item.diet_type));  // Capture saved IDs
+  } catch (error) {
+    console.error("Failed to fetch saved diets:", error);
+  }
+};
 
   // Handle diet card click to show details
   const handleDietClick = async (diet) => {
@@ -162,6 +164,26 @@ const DietPlan = () => {
     setSelectedRecipe(null);
     setError(null);
   };
+
+  const toggleSaveDietType = async (typeId) => {
+  const token = localStorage.getItem("authToken");
+  const headers = { Authorization: `Token ${token}` };
+
+  if (savedTypeIds.includes(typeId)) {
+    // Unsave
+    await axios.delete("http://localhost:8000/api/saved-diets/", {
+      headers,
+      data: { diet_type_id: typeId }
+    });
+    setSavedTypeIds(prev => prev.filter(id => id !== typeId));
+  } else {
+    // Save
+    await axios.post("http://localhost:8000/api/saved-diets/", { diet_type_id: typeId }, { headers });
+    setSavedTypeIds(prev => [...prev, typeId]);
+  }
+};
+
+
 
   useEffect(() => {
     window.addEventListener('scroll', animateOnScroll);
@@ -354,7 +376,14 @@ const DietPlan = () => {
                             <div className="dp-diet-types-grid">
                               {selectedDiet.types.map((type) => (
                                 <div key={type.id} className="dp-diet-type-card" onClick={() => handleTypeClick(type)}>
-                                  <h4>{type.name}</h4>
+                                  <h4>{type.name}</h4> <button
+  className="dp-save-button"
+  onClick={() => toggleSaveDietType(type.id)}
+>
+  {savedTypeIds.includes(type.id) ? 'Unsave' : 'Save'}
+</button>
+                                  
+
                                   <div className="dp-diet-type-info">
                                     <div className="dp-info-item">
                                       <span className="dp-info-label">Goal</span>
@@ -497,45 +526,46 @@ const DietPlan = () => {
       )}
 
       {/* Footer Section */}
-      <footer className="dp-footer">
-        <div className="dp-container">
-          <div className="dp-footer-content">
-            <div className="dp-footer-logo">
-              <h2>GymFreak</h2>
-              <p>Transform Your Fitness Journey</p>
+          <footer className="footer">
+            <div className="container">
+              <div className="footer-content">
+                <div className="footer-logo">
+                  <h2>GymFreak</h2>
+                  <p>Transform Your Fitness Journey</p>
+                </div>
+                <div className="footer-links">
+                  <div className="footer-column">
+                    <h3>Company</h3>
+                    <ul>
+                      <li><a href="#">About Us</a></li>
+                      <li><a href="#">Careers</a></li>
+                      <li><a href="#">Contact</a></li>
+                    </ul>
+                  </div>
+                  <div className="footer-column">
+                    <h3>Resources</h3>
+                    <ul>
+                      <li><a href="#">Blog</a></li>
+                      <li><a href="#">Guides</a></li>
+                      <li><a href="#">Support</a></li>
+                    </ul>
+                  </div>
+                  <div className="footer-column">
+                    <h3>Legal</h3>
+                    <ul>
+                      <li><a href="#">Privacy Policy</a></li>
+                      <li><a href="#">Terms of Service</a></li>
+                      <li><a href="#">Cookie Policy</a></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
             </div>
-            <div className="dp-footer-links">
-              <div className="dp-footer-column">
-                <h3>Company</h3>
-                <ul>
-                  <li><a href="#">About Us</a></li>
-                  <li><a href="#">Careers</a></li>
-                  <li><a href="#">Contact</a></li>
-                </ul>
+            <div className="footer-bottom" >
+                <p style={{color : "white"}}>&copy; 2023 GymFreak. All rights reserved.</p>
               </div>
-              <div className="dp-footer-column">
-                <h3>Resources</h3>
-                <ul>
-                  <li><a href="#">Blog</a></li>
-                  <li><a href="#">Guides</a></li>
-                  <li><a href="#">Support</a></li>
-                </ul>
-              </div>
-              <div className="dp-footer-column">
-                <h3>Legal</h3>
-                <ul>
-                  <li><a href="#">Privacy Policy</a></li>
-                  <li><a href="#">Terms of Service</a></li>
-                  <li><a href="#">Cookie Policy</a></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="dp-footer-bottom">
-          <p>&copy; 2023 GymFreak. All rights reserved.</p>
-        </div>
-      </footer>
+          </footer>
     </>
   );
 };
