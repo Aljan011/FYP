@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
-import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
+import {FixedSizeList as List} from 'react-window';
+import { FaStar, FaStarHalfAlt, FaRegStar, FaHeart, FaRegHeart, FaComment, FaPaperPlane } from "react-icons/fa";
 import "../css/UserDash.css";
 
 function renderStars(rating) {
@@ -18,7 +19,6 @@ function renderStars(rating) {
 
   return stars;
 }
-
 
 const UserDash = () => {
   const [workoutPosts, setWorkoutPosts] = useState([]);
@@ -40,22 +40,42 @@ const UserDash = () => {
   const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const [isLoading, setIsLoading] = useState(true);
   const [currentExerciseIndices, setCurrentExerciseIndices] = useState({});
+  const [showComments, setShowComments] = useState({});
+  const [newComments, setNewComments] = useState({});
+  const [postComments, setPostComments] = useState({});
+
+  const [socket, setSocket] = useState(null);
   const navigate = useNavigate();
 
+  // Fetch trainers
   useEffect(() => {
-  fetch("http://localhost:8000/api/trainers/")
-    .then(res => res.json())
-    .then(data => {
-      console.log("Fetched trainers:", data); //  Check if this logs
-      setTrainers(data);
-    })
-    .catch(err => console.error("Error fetching trainers:", err));
-}, []);
+    const fetchTrainers = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/trainers/");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log("Fetched trainers:", data);
+        setTrainers(data);
+      } catch (err) {
+        console.error("Error fetching trainers:", err);
+      }
+    };
 
+    fetchTrainers();
+  }, []);
+
+  // Fetch workout posts
   useEffect(() => {
     const fetchWorkoutPosts = async () => {
       try {
         const token = localStorage.getItem('authToken');
+        if (!token) {
+          console.error('No auth token found');
+          return;
+        }
+
         const response = await axios.get('http://localhost:8000/api/workout-posts/', {
           headers: {
             Authorization: `Token ${token}`,
@@ -78,6 +98,78 @@ const UserDash = () => {
     fetchWorkoutPosts();
   }, []);
 
+  // Handle reactions
+  const handleReaction = async (postId, emoji) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
+      await axios.post(`http://localhost:8000/api/workout-posts/${postId}/react/`, 
+        { emoji }, 
+        {
+          headers: { Authorization: `Token ${token}` }
+        }
+      );
+    } catch (err) {
+      console.error("Reaction failed", err);
+    }
+  };
+
+  // WebSocket connection
+  useEffect(() => {
+    const newSocket = new WebSocket("ws://localhost:8000/ws/workout_feed/");
+
+    newSocket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === 'like_update') {
+        setWorkoutPosts(prev => prev.map(post => 
+          post.id === data.post_id 
+            ? { 
+                ...post, 
+                likes_count: data.likes_count,
+                is_liked: data.is_liked ?? post.is_liked
+              } 
+            : post
+        ));
+      }
+
+      if (data.type === 'comment_new') {
+        setPostComments(prev => ({
+          ...prev,
+          [data.post_id]: [...(prev[data.post_id] || []), data.comment]
+        }));
+        setWorkoutPosts(prev => prev.map(post =>
+          post.id === data.post_id
+            ? { ...post, comments_count: (post.comments_count || 0) + 1 }
+            : post
+        ));
+      }
+    };
+
+    newSocket.onopen = () => {
+      console.log('WebSocket connected');
+    };
+
+    newSocket.onclose = () => {
+      console.log('WebSocket disconnected');
+    };
+
+    newSocket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.close();
+    };
+  }, []);
+
+  // Fetch user data and apply theme
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark-mode');
@@ -88,7 +180,11 @@ const UserDash = () => {
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('authToken');
-        if (!token) return;
+        if (!token) {
+          console.error('No auth token found');
+          setIsLoading(false);
+          return;
+        }
 
         const userResponse = await axios.get('http://localhost:8000/api/profile/', {
           headers: { Authorization: `Token ${token}` }
@@ -136,12 +232,90 @@ const UserDash = () => {
     document.documentElement.classList.toggle('dark-mode');
   };
 
-  const getIntensityClass = (intensity) => {
-    if (!intensity) return 'medium';
-    return intensity.toLowerCase();
+  // Like/Unlike functionality - FIXED
+  const handleLike = async (postId) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
+      const response = await axios.post(`http://localhost:8000/api/workout-posts/${postId}/like/`, {}, {
+        headers: { Authorization: `Token ${token}` }
+      });
+      
+      // Update local state immediately for better UX
+      setWorkoutPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { 
+              ...post, 
+              is_liked: response.data.is_liked,
+              likes_count: response.data.likes_count 
+            }
+          : post
+      ));
+    } catch (error) {
+      console.error('Error liking post:', error);
+    }
   };
 
-  // Add the missing slide handlers
+  // Comment functionality - FIXED
+  const handleComment = async (postId) => {
+    const commentText = newComments[postId]?.trim();
+    if (!commentText) return;
+    
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
+      const response = await axios.post(`http://localhost:8000/api/workout-posts/${postId}/comment/`,
+        { text: commentText },
+        { headers: { Authorization: `Token ${token}` } }
+      );
+      
+      // Clear the comment input
+      setNewComments(prev => ({ ...prev, [postId]: '' }));
+      
+      // Update local state
+      setWorkoutPosts(prev => prev.map(post =>
+        post.id === postId
+          ? { 
+              ...post, 
+              comments: [...(post.comments || []), response.data],
+              comments_count: (post.comments_count || 0) + 1
+            }
+          : post
+      ));
+    } catch (error) {
+      console.error('Error posting comment:', error);
+    }
+  };
+
+  const toggleComments = async (postId) => {
+    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+    
+    if (!postComments[postId]) {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          console.error('No auth token found');
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:8000/api/workout-posts/${postId}/comments/`, {
+          headers: { Authorization: `Token ${token}` }
+        });
+        setPostComments(prev => ({ ...prev, [postId]: response.data }));
+      } catch (err) {
+        console.error("Error loading comments", err);
+      }
+    }
+  };
+
   const handleSlideLeft = (postId) => {
     setCurrentExerciseIndices(prevIndices => {
       const post = workoutPosts.find(p => p.id === postId);
@@ -216,60 +390,35 @@ const UserDash = () => {
           </div>
         </div>
 
-        {/* <div className="dashboard-section recent-workouts">
-          <h2>Recent Workouts</h2>
-          <div className="workouts-list">
-            {recentWorkouts.length > 0 ? (
-              recentWorkouts.map((workout) => (
-                <div key={workout.id} className="workout-card">
-                  <div className="workout-header">
-                    <h3>{workout.title}</h3>
-                    <span className={`intensity-badge ${getIntensityClass(workout.intensity)}`}>
-                      {workout.intensity || 'Medium'}
-                    </span>
-                  </div>
-                  <div className="workout-details">
-                    <span>{workout.duration || '0'} mins</span>
-                    <span>{workout.exercises?.length || 0} exercises</span>
+        <div className="my-8 px-4">
+          <h2 className="text-2xl font-bold mb-4">Our Trainers</h2>
+          {trainers.length === 0 ? (
+            <p className="text-gray-500">No trainers found. Check if API returned data.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {trainers.map(trainer => (
+                <div
+                  key={trainer.id}
+                  className="cursor-pointer p-4 bg-white shadow rounded flex items-center gap-4 hover:bg-gray-100 transition"
+                  onClick={() => navigate(`/trainers/${trainer.id}`)}
+                >
+                  <img
+                    src={trainer.profile_picture || "/default-avatar.png"}
+                    alt={trainer.username}
+                    className="w-16 h-16 rounded-full object-cover"
+                  />
+                  <div>
+                    <h3 className="text-lg font-semibold">{trainer.username}</h3>
+                    <div className="flex items-center gap-1">
+                      {renderStars(trainer.average_rating)}
+                      <span className="text-sm text-gray-600">({trainer.average_rating.toFixed(1)} / 5)</span>
+                    </div>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="no-workouts">No recent workouts found</p>
-            )}
-          </div>
-        </div> */}
-
-          <div className="my-8 px-4">
-      <h2 className="text-2xl font-bold mb-4">Our Trainers</h2>
-  {trainers.length === 0 ? (
-  <p className="text-gray-500">No trainers found. Check if API returned data.</p>
-) : (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-    {trainers.map(trainer => (
-      <div
-        key={trainer.id}
-        className="cursor-pointer p-4 bg-white shadow rounded flex items-center gap-4 hover:bg-gray-100 transition"
-        onClick={() => navigate(`/trainers/${trainer.id}`)}
-      >
-        <img
-          src={trainer.profile_picture || "/default-avatar.png"}
-          alt={trainer.username}
-          className="w-16 h-16 rounded-full object-cover"
-        />
-        <div>
-          <h3 className="text-lg font-semibold">{trainer.username}</h3>
-          <div className="flex items-center gap-1">
-  {renderStars(trainer.average_rating)}
-  <span className="text-sm text-gray-600">({trainer.average_rating.toFixed(1)} / 5)</span>
-</div>
-
+              ))}
+            </div>
+          )}
         </div>
-      </div>
-    ))}
-  </div>
-)}
-    </div>
 
         <div className="dashboard-section quick-actions">
           <h2>Quick Actions</h2>
@@ -285,10 +434,10 @@ const UserDash = () => {
               <p>Check your nutrition plans</p>
             </Link>
             <Link to="/chat" className="action-card">
-  <span className="icon">💬</span>
-  <h3>Open Chat</h3>
-  <p>Message your trainer in real-time</p>
-</Link>
+              <span className="icon">💬</span>
+              <h3>Open Chat</h3>
+              <p>Message your trainer in real-time</p>
+            </Link>
           </div>
         </div>
       </div>
@@ -299,9 +448,13 @@ const UserDash = () => {
           {workoutPosts.length > 0 ? (
             workoutPosts.map((post) => (
               <div key={post.id} className="post-card">
-                <h3>{post.workout.title}</h3>
-                <p><strong>By:</strong> {post.user}</p>
+                <div className="post-header">
+                  <h3>{post.workout.title}</h3>
+                  <p><strong>By:</strong> {post.user}</p>
+                </div>
+                
                 {post.caption && <p className="caption">"{post.caption}"</p>}
+                
                 <div className="post-details">
                   <p><strong>Duration:</strong> {post.workout_details.duration || 'N/A'} mins</p>
                   <p><strong>Total Sets:</strong> {post.workout_details.total_sets}</p>
@@ -345,6 +498,83 @@ const UserDash = () => {
                           ❯
                         </button>
                       </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Like and Comment Section */}
+                <div className="post-interactions">
+                  <div className="interaction-buttons">
+                    <button 
+                      className={`like-button ${post.is_liked ? 'liked' : ''}`}
+                      onClick={() => handleLike(post.id)}
+                    >
+                      {post.is_liked ? <FaHeart /> : <FaRegHeart />}
+                      <span>{post.likes_count || 0}</span>
+                      <div className="reaction-menu">
+                        <span onClick={(e) => {
+                          e.stopPropagation();
+                          handleReaction(post.id, '💪');
+                        }}>💪</span>
+                        <span onClick={(e) => {
+                          e.stopPropagation();
+                          handleReaction(post.id, '🔥');
+                        }}>🔥</span>
+                        <span onClick={(e) => {
+                          e.stopPropagation();
+                          handleReaction(post.id, '❤️');
+                        }}>❤️</span>
+                      </div>
+                    </button>
+                    
+                    <button 
+                      className="comment-button"
+                      onClick={() => toggleComments(post.id)}
+                    >
+                      <FaComment />
+                      <span>{post.comments_count || 0}</span>
+                    </button>
+                  </div>
+
+                  {/* Comments Section */}
+                  {showComments[post.id] && (
+                    <div className="comments-section">
+                      {!postComments[post.id] ? (
+                        <p>Loading comments...</p>
+                      ) : (
+                        <>
+                          <div className="comments-list">
+                            {postComments[post.id].map((comment, index) => (
+                              <div key={index} className="comment">
+                                <strong>{comment.user}:</strong> {comment.text}
+                                <span className="comment-time">{new Date(comment.created_at).toLocaleString()}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="comment-input">
+                            <input
+                              type="text"
+                              placeholder="Add a comment..."
+                              value={newComments[post.id] || ''}
+                              onChange={(e) => setNewComments(prev => ({
+                                ...prev,
+                                [post.id]: e.target.value
+                              }))}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleComment(post.id);
+                                }
+                              }}
+                            />
+                            <button 
+                              onClick={() => handleComment(post.id)}
+                              disabled={!newComments[post.id]?.trim()}
+                            >
+                              <FaPaperPlane />
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

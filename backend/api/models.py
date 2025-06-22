@@ -164,6 +164,35 @@ class WorkoutPost(models.Model):
     def __str__(self):
         return f"{self.user.username}'s post on {self.posted_at}"
     
+
+class WorkoutPostLike(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(WorkoutPost, on_delete=models.CASCADE, related_name='likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'post')  # Prevent multiple likes
+
+class WorkoutPostReaction(models.Model):
+    EMOJI_CHOICES = (
+        ('💪', 'Flex'),
+        ('🔥', 'Fire'),
+        ('❤️', 'Heart'),
+        # Add more as needed
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(WorkoutPost, on_delete=models.CASCADE, related_name='reactions')
+    emoji = models.CharField(max_length=5, choices=EMOJI_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class WorkoutPostComment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(WorkoutPost, on_delete=models.CASCADE, related_name='comments')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    
 class Diet(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()

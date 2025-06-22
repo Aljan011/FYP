@@ -92,3 +92,35 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender_role = UserProfile.objects.get(user__id=sender_id).role
         receiver_role = UserProfile.objects.get(user__id=receiver_id).role
         return sender_role != receiver_role
+
+class WorkoutPostConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.group_name = 'workout_feed'
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def like_update(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'like_update',
+            'post_id': event['post_id'],
+            'likes_count': event['likes_count']
+        }))
+
+    async def reaction_update(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'reaction_update',
+            'post_id': event['post_id'],
+            'emoji': event['emoji'],
+            'user': event['user']
+        }))
+
+    async def comment_new(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'comment_new',
+            'post_id': event['post_id'],
+            'comment': event['comment']
+        }))
+

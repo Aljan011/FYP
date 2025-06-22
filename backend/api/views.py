@@ -19,11 +19,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, SavedDietType, DietType, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan, WorkoutPlanTemplate, TrainerReview
+from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, SavedDietType, DietType, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan, WorkoutPlanTemplate, TrainerReview, WorkoutPostComment, WorkoutPostLike, WorkoutPostReaction
 from .serializers import (
     ExerciseSerializer, WorkoutSerializer,
     WorkoutSessionSerializer, 
-    WorkoutExerciseSetSerializer, WorkoutPostSerializer, WorkoutPlanSerializer, WorkoutPlanTemplateSerializer,
+    WorkoutExerciseSetSerializer, WorkoutPostSerializer, WorkoutPlanSerializer, WorkoutPlanTemplateSerializer, WorkoutPostCommentSerializer,
+    WorkoutPostLikeSerializer, WorkoutPostReactionSerializer,
     DietSerializer, SavedDietTypeSerializer,
     RecipeSerializer, RecipeDetailSerializer, 
     RegistrationSerializer, UserSerializer, TrainerProfilePublicSerializer, TrainerReviewSerializer
@@ -437,6 +438,76 @@ class WorkoutPostListView(generics.ListAPIView):
     serializer_class = WorkoutPostSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+class ToggleLikeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, post_id):
+        post = get_object_or_404(WorkoutPost, id=post_id)
+        like, created = WorkoutPostLike.objects.get_or_create(user=request.user, post=post)
+        if not created:
+            like.delete()
+            action = 'unliked'
+        else:
+            action = 'liked'
+
+        # WebSocket broadcast
+        async_to_sync(get_channel_layer().group_send)(
+            'workout_feed',
+            {
+                'type': 'like.update',
+                'post_id': post_id,
+                'likes_count': post.likes.count()
+            }
+        )
+
+        return Response({
+  'action': action,
+  'likes_count': post.likes.count(),
+  'is_liked': WorkoutPostLike.objects.filter(user=request.user, post=post).exists()
+})
+
+class ReactionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, post_id):
+        post = get_object_or_404(WorkoutPost, id=post_id)
+        emoji = request.data.get('emoji')
+
+        # Remove previous reaction from this user (optional)
+        WorkoutPostReaction.objects.filter(user=request.user, post=post).delete()
+        WorkoutPostReaction.objects.create(user=request.user, post=post, emoji=emoji)
+
+        async_to_sync(get_channel_layer().group_send)(
+            'workout_feed',
+            {
+                'type': 'reaction.update',
+                'post_id': post_id,
+                'emoji': emoji,
+                'user': request.user.username
+            }
+        )
+
+        return Response({'status': 'reacted'})
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = WorkoutPostCommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return WorkoutPostComment.objects.filter(post__id=self.kwargs['post_id'])
+
+    def perform_create(self, serializer):
+        comment = serializer.save(user=self.request.user)
+        async_to_sync(get_channel_layer().group_send)(
+            'workout_feed',
+            {
+                'type': 'comment.new',
+                'post_id': comment.post.id,
+                'comment': WorkoutPostCommentSerializer(comment).data
+            }
+        )
+
+
 # ✅ DIET VIEWSET
 class DietViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
@@ -570,7 +641,7 @@ def get_chat_history(request, user_id, partner_id):
             "receiver_id": msg.receiver.id,
             "content": msg.content,
             "timestamp": msg.timestamp,
-            "message_type": msg.message_type  # ✅ critical for plan_card detection
+            "message_type": msg.message_type  #  critical for plan_card detection
         }
         for msg in messages
     ])

@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
-    Exercise, WorkoutSession, WorkoutExerciseSet, WorkoutPlan, Workout, WorkoutTracking, WorkoutPost, WorkoutPlanTemplate,
+    Exercise, WorkoutSession, WorkoutExerciseSet, WorkoutPlan, Workout, WorkoutTracking, WorkoutPost, WorkoutPlanTemplate, WorkoutPostComment,
+    WorkoutPostLike, WorkoutPostReaction, WorkoutPostReaction,
     UserProfile, TrainerReview,
     Diet, Recipe, RecipeStep, Ingredient, DietType, SavedDietType
 )
@@ -218,6 +219,28 @@ class WorkoutPostSerializer(serializers.ModelSerializer):
             "exercises": exercise_data
         }
         
+class WorkoutPostCommentSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+    replies = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WorkoutPostComment
+        fields = ['id', 'user', 'post', 'parent', 'text', 'created_at', 'replies']
+
+    def get_replies(self, obj):
+        return WorkoutPostCommentSerializer(obj.replies.all(), many=True).data
+
+class WorkoutPostLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkoutPostLike
+        fields = ['id', 'user', 'post', 'created_at']
+
+class WorkoutPostReactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkoutPostReaction
+        fields = ['id', 'user', 'post', 'emoji', 'created_at']
+
+        
 class WorkoutPlanTemplateSerializer(serializers.ModelSerializer):
     trainer = serializers.StringRelatedField(read_only=True)
     exercises = serializers.PrimaryKeyRelatedField(
@@ -236,14 +259,14 @@ class WorkoutPlanTemplateSerializer(serializers.ModelSerializer):
      return template
 
 
-
-# Diet Type
+# --- Diet Type (basic) ---
 class DietTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = DietType
         fields = ['id', 'name', 'goal', 'foods', 'avoid']
 
-# Recipe
+
+# --- Recipe ---
 class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
@@ -251,7 +274,8 @@ class RecipeSerializer(serializers.ModelSerializer):
                   'calories', 'protein', 'carbs', 'fat']
         read_only_fields = ['id']
 
-# Diet
+
+# --- Diet Serializer (uses DietType & Recipe above) ---
 class DietSerializer(serializers.ModelSerializer):
     types = DietTypeSerializer(many=True, read_only=True)
     recipes = RecipeSerializer(many=True, read_only=True)
@@ -274,26 +298,49 @@ class DietSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user']
 
+
+# --- Simple Diet Serializer for Saved View ---
+class DietSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Diet
+        fields = ['id', 'name', 'image', 'description']
+
+
+# --- Mini Diet Type Serializer for nested Saved View ---
+class DietTypeMiniSerializer(serializers.ModelSerializer):
+    diet = DietSimpleSerializer(read_only=True)
+
+    class Meta:
+        model = DietType
+        fields = ['id', 'name', 'goal', 'foods', 'avoid', 'diet']
+
+
+# --- Saved DietType Serializer ---
 class SavedDietTypeSerializer(serializers.ModelSerializer):
+    diet_type = DietTypeMiniSerializer(read_only=True)
+
     class Meta:
         model = SavedDietType
         fields = ['id', 'diet_type', 'saved_at']
 
-# Recipe Step
+
+# --- Recipe Step ---
 class RecipeStepSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecipeStep
         fields = ['step_number', 'description']
         read_only_fields = ['id']
 
-# Ingredient
+
+# --- Ingredient ---
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
         fields = ['name', 'quantity']
         read_only_fields = ['id']
 
-# Recipe Detail
+
+# --- Full Recipe Detail ---
 class RecipeDetailSerializer(serializers.ModelSerializer):
     steps = RecipeStepSerializer(many=True, read_only=True)
     ingredients = IngredientSerializer(many=True, read_only=True)

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import '../css/DietPlan.css'; 
 
-
 const DietPlan = () => {
   // Existing states
   const [dietPlan, setDietPlan] = useState([]);
@@ -18,7 +17,6 @@ const DietPlan = () => {
   const [recipes, setRecipes] = useState([]);
   const [error, setError] = useState(null);
   const [savedTypeIds, setSavedTypeIds] = useState([]);
-
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark-mode", isDarkMode);
@@ -61,8 +59,8 @@ const DietPlan = () => {
       }
     });
   };
- //asdkjhdkfdfkjdsfhkljh
-  // Fetch all diets (browse tab) fdsfdf
+
+  // Fetch all diets (browse tab)
   useEffect(() => {
     const token = localStorage.getItem("authToken");
 
@@ -88,22 +86,22 @@ const DietPlan = () => {
 
   // Fetch saved diets (saved tab)
   const fetchSavedDiets = async () => {
-  try {
-    const token = localStorage.getItem("authToken");
-    if (!token) return;
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) return;
 
-    const response = await axios.get("http://localhost:8000/api/saved-diets/", {
-      headers: {
-        Authorization: `Token ${token}`,
-      }
-    });
+      const response = await axios.get("http://localhost:8000/api/saved-diets/", {
+        headers: {
+          Authorization: `Token ${token}`,
+        }
+      });
 
-    setSavedDiets(response.data);
-    setSavedTypeIds(response.data.map(item => item.diet_type));  // Capture saved IDs
-  } catch (error) {
-    console.error("Failed to fetch saved diets:", error);
-  }
-};
+      setSavedDiets(response.data);
+      setSavedTypeIds(response.data.map(item => item.diet_type.id));  // Capture saved IDs
+    } catch (error) {
+      console.error("Failed to fetch saved diets:", error);
+    }
+  };
 
   // Handle diet card click to show details
   const handleDietClick = async (diet) => {
@@ -166,24 +164,22 @@ const DietPlan = () => {
   };
 
   const toggleSaveDietType = async (typeId) => {
-  const token = localStorage.getItem("authToken");
-  const headers = { Authorization: `Token ${token}` };
+    const token = localStorage.getItem("authToken");
+    const headers = { Authorization: `Token ${token}` };
 
-  if (savedTypeIds.includes(typeId)) {
-    // Unsave
-    await axios.delete("http://localhost:8000/api/saved-diets/", {
-      headers,
-      data: { diet_type_id: typeId }
-    });
-    setSavedTypeIds(prev => prev.filter(id => id !== typeId));
-  } else {
-    // Save
-    await axios.post("http://localhost:8000/api/saved-diets/", { diet_type_id: typeId }, { headers });
-    setSavedTypeIds(prev => [...prev, typeId]);
-  }
-};
-
-
+    if (savedTypeIds.includes(typeId)) {
+      // Unsave
+      await axios.delete("http://localhost:8000/api/saved-diets/", {
+        headers,
+        data: { diet_type_id: typeId }
+      });
+      setSavedTypeIds(prev => prev.filter(id => id !== typeId));
+    } else {
+      // Save
+      await axios.post("http://localhost:8000/api/saved-diets/", { diet_type_id: typeId }, { headers });
+      setSavedTypeIds(prev => [...prev, typeId]);
+    }
+  };
 
   useEffect(() => {
     window.addEventListener('scroll', animateOnScroll);
@@ -376,14 +372,17 @@ const DietPlan = () => {
                             <div className="dp-diet-types-grid">
                               {selectedDiet.types.map((type) => (
                                 <div key={type.id} className="dp-diet-type-card" onClick={() => handleTypeClick(type)}>
-                                  <h4>{type.name}</h4> <button
-  className="dp-save-button"
-  onClick={() => toggleSaveDietType(type.id)}
->
-  {savedTypeIds.includes(type.id) ? 'Unsave' : 'Save'}
-</button>
+                                  <h4>{type.name}</h4>
+                                  <button
+                                    className="dp-save-button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleSaveDietType(type.id);
+                                    }}
+                                  >
+                                    {savedTypeIds.includes(type.id) ? 'Unsave' : 'Save'}
+                                  </button>
                                   
-
                                   <div className="dp-diet-type-info">
                                     <div className="dp-info-item">
                                       <span className="dp-info-label">Goal</span>
@@ -412,47 +411,74 @@ const DietPlan = () => {
               {activeTab === 'saved' && (
                 <div className="dp-saved-content">
                   {savedDiets.length > 0 ? (
-                    <div className="dp-plans-grid">
-                      {savedDiets.map((savedDiet) => (
-                        <div 
-                          key={savedDiet.id} 
-                          className="dp-plan-card" 
-                          onClick={() => handleDietClick(savedDiet.diet)}
-                        >
-                          <div className="dp-plan-image">
-                            <img
-                              src={savedDiet.diet.image ? savedDiet.diet.image : "/fallback.jpg"}
-                              alt={savedDiet.diet.name}
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = "/fallback.jpg";
-                              }}
-                            />
-                          </div>
-                          <div className="dp-plan-content">
-                            <h3>{savedDiet.diet.name}</h3>
-                            <div className="dp-plan-description">
-                              <p>{savedDiet.diet.description}</p>
+                    <div className="dp-diet-types-grid">
+                      {savedDiets.map((saved) => {
+                        const type = saved.diet_type;
+                        const diet = type?.diet;
+
+                        return (
+                          <div key={saved.id} className="dp-diet-type-card">
+                            <h4>{type.name}</h4>
+                            
+
+ <button
+          className={`dp-save-button ${savedTypeIds.includes(type.id) ? 'saved' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleSaveDietType(type.id);
+          }}
+          title={savedTypeIds.includes(type.id) ? 'Remove from saved' : 'Save diet type'}
+          aria-label={savedTypeIds.includes(type.id) ? 'Remove from saved' : 'Save diet type'}
+        >
+          <svg
+            width="20"
+            height="18"
+            viewBox="0 0 24 22"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="heart-svg"
+          >
+            <path
+              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+              className="heart-path"
+            />
+          </svg>
+        </button>
+                            {diet && (
+                              <div className="dp-plan-image" style={{ marginBottom: '1rem' }}>
+                                <img
+                                  src={diet.image ?? "/fallback.jpg"}
+                                  alt={diet.name}
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "/fallback.jpg";
+                                  }}
+                                  style={{ borderRadius: '12px', width: '100%', objectFit: 'cover', maxHeight: '180px' }}
+                                />
+                              </div>
+                            )}
+                            <div className="dp-diet-type-info">
+                              <div className="dp-info-item">
+                                <span className="dp-info-label">Goal</span>
+                                <span className="dp-info-value">{type.goal}</span>
+                              </div>
+                              <div className="dp-info-item">
+                                <span className="dp-info-label">Foods</span>
+                                <span className="dp-info-value">{type.foods}</span>
+                              </div>
+                              <div className="dp-info-item">
+                                <span className="dp-info-label">Avoid</span>
+                                <span className="dp-info-value">{type.avoid}</span>
+                              </div>
                             </div>
-                            <div className="dp-saved-badge">
-                              <span>Saved</span>
-                            </div>
                           </div>
-                          <div className="dp-plan-footer">
-                            <span className="dp-arrow-button">
-                              View Plan
-                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M5 12h14M12 5l7 7-7 7"/>
-                              </svg>
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="dp-empty-state">
-                      <h3>No Saved Diets</h3>
-                      <p>You haven't saved any diet plans yet. Browse our diet plans and save your favorites!</p>
+                      <h3>No Saved Diet Types</h3>
+                      <p>You haven't saved any specific diet plans yet. Browse and save your favorites!</p>
                     </div>
                   )}
                 </div>
@@ -460,8 +486,6 @@ const DietPlan = () => {
             </div>
           </div>
         </section>
-        
-       
       </main>
       
       {/* Modals */}
@@ -526,46 +550,45 @@ const DietPlan = () => {
       )}
 
       {/* Footer Section */}
-          <footer className="footer">
-            <div className="container">
-              <div className="footer-content">
-                <div className="footer-logo">
-                  <h2>GymFreak</h2>
-                  <p>Transform Your Fitness Journey</p>
-                </div>
-                <div className="footer-links">
-                  <div className="footer-column">
-                    <h3>Company</h3>
-                    <ul>
-                      <li><a href="#">About Us</a></li>
-                      <li><a href="#">Careers</a></li>
-                      <li><a href="#">Contact</a></li>
-                    </ul>
-                  </div>
-                  <div className="footer-column">
-                    <h3>Resources</h3>
-                    <ul>
-                      <li><a href="#">Blog</a></li>
-                      <li><a href="#">Guides</a></li>
-                      <li><a href="#">Support</a></li>
-                    </ul>
-                  </div>
-                  <div className="footer-column">
-                    <h3>Legal</h3>
-                    <ul>
-                      <li><a href="#">Privacy Policy</a></li>
-                      <li><a href="#">Terms of Service</a></li>
-                      <li><a href="#">Cookie Policy</a></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              
+      <footer className="footer">
+        <div className="container">
+          <div className="footer-content">
+            <div className="footer-logo">
+              <h2>GymFreak</h2>
+              <p>Transform Your Fitness Journey</p>
             </div>
-            <div className="footer-bottom" >
-                <p style={{color : "white"}}>&copy; 2023 GymFreak. All rights reserved.</p>
+            <div className="footer-links">
+              <div className="footer-column">
+                <h3>Company</h3>
+                <ul>
+                  <li><a href="#">About Us</a></li>
+                  <li><a href="#">Careers</a></li>
+                  <li><a href="#">Contact</a></li>
+                </ul>
               </div>
-          </footer>
+              <div className="footer-column">
+                <h3>Resources</h3>
+                <ul>
+                  <li><a href="#">Blog</a></li>
+                  <li><a href="#">Guides</a></li>
+                  <li><a href="#">Support</a></li>
+                </ul>
+              </div>
+              <div className="footer-column">
+                <h3>Legal</h3>
+                <ul>
+                  <li><a href="#">Privacy Policy</a></li>
+                  <li><a href="#">Terms of Service</a></li>
+                  <li><a href="#">Cookie Policy</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <p style={{color: "white"}}>&copy; 2023 GymFreak. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </>
   );
 };

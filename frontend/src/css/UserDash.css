@@ -985,6 +985,193 @@ html {
   box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
 }
 
+/* Add these styles to your existing UserDash.css file */
+
+.post-interactions {
+  border-top: 1px solid #e5e5e5;
+  padding-top: 12px;
+  margin-top: 16px;
+}
+
+.interaction-buttons {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.like-button, .comment-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.like-button:hover, .comment-button:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.like-button.liked {
+  color: #e74c3c;
+}
+
+.like-button.liked:hover {
+  background-color: #fdf2f2;
+}
+
+.comments-section {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.comments-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.comment {
+  padding: 8px 0;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 14px;
+}
+
+.comment:last-child {
+  border-bottom: none;
+}
+
+.comment strong {
+  color: #495057;
+  margin-right: 8px;
+}
+
+.comment-time {
+  font-size: 12px;
+  color: #6c757d;
+  margin-left: 8px;
+}
+
+.comment-input {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.comment-input input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  outline: none;
+  font-size: 14px;
+}
+
+.comment-input input:focus {
+  border-color: #007bff;
+}
+
+.comment-input button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.comment-input button:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.comment-input button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.reaction-menu {
+  display: none;
+  position: absolute;
+  background: #fff;
+  border-radius: 12px;
+  padding: 6px 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  top: -40px;
+  left: 0;
+  z-index: 10;
+}
+
+.like-button:hover .reaction-menu {
+  display: flex;
+  gap: 8px;
+}
+
+
+/* Dark mode styles */
+.dark-mode .post-interactions {
+  border-top-color: #444;
+}
+
+.dark-mode .like-button,
+.dark-mode .comment-button {
+  color: #ccc;
+}
+
+.dark-mode .like-button:hover,
+.dark-mode .comment-button:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.dark-mode .like-button.liked:hover {
+  background-color: #2d1b1b;
+}
+
+.dark-mode .comments-section {
+  background-color: #2a2a2a;
+}
+
+.dark-mode .comment {
+  border-bottom-color: #444;
+}
+
+.dark-mode .comment strong {
+  color: #e9ecef;
+}
+
+.dark-mode .comment-time {
+  color: #adb5bd;
+}
+
+.dark-mode .comment-input input {
+  background-color: #333;
+  border-color: #555;
+  color: #fff;
+}
+
+.dark-mode .comment-input input:focus {
+  border-color: #0d6efd;
+}
+
 @media (max-width: 992px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
