@@ -823,22 +823,20 @@ body {
 .dp-diet-type-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 1.5rem;
-  position: relative;
-  z-index: 2;
-  gap : 1rem;
+  gap: 1rem;
 }
 
-.dp-diet-type-card h4 {
+.dp-diet-type-header h4 {
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--text-primary);
-  flex: 1;
   margin: 0;
-  line-height: 1.3;
-  display: flex;
-  align-items: center;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Enhanced SVG Heart Button Styles */
@@ -858,6 +856,8 @@ body {
   justify-content: center;
   border-radius: 50%;
   outline: none; /* Remove default outline */
+  margin-left: auto;
+  
 }
 
 .dp-save-button:focus {

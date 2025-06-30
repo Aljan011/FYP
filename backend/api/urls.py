@@ -4,7 +4,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from django.conf.urls.static import static
 from django.conf import settings
 from . import views
-from .views import RegisterUserView, ApproveUserView, LoginView, UserProfileView, DietViewSet, RecipeViewSet, WorkoutViewSet, UserWorkoutList, WorkoutPostListView, WorkoutPostCreateView, WorkoutPlanTemplateViewSet, WorkoutPlanViewSet, chat_partners_for_user, get_chat_history, list_trainers, post_trainer_review, saved_diet_types
+from .views import RegisterUserView, ApproveUserView, LoginView, UserProfileView, DietViewSet, RecipeViewSet, WorkoutViewSet, UserWorkoutList, WorkoutPostListView, WorkoutPostCreateView, ToggleLikeView, ReactionView, CommentViewSet, WorkoutPlanTemplateViewSet, WorkoutPlanViewSet, chat_partners_for_user, get_chat_history, post_trainer_review, saved_diet_types
 
 # Initialize the router
 router = DefaultRouter()
@@ -42,6 +42,11 @@ urlpatterns = [
     #Workout post urls
     path('workout-posts/', WorkoutPostListView.as_view(), name='workout-posts'),
     path('workout-posts/create/', WorkoutPostCreateView.as_view(), name='create-workout-post'),
+    
+     # ✅ Like + Reaction + Comments
+     path('workout-posts/<int:post_id>/like/', ToggleLikeView.as_view(), name='like-post'),
+    path('workout-posts/<int:post_id>/react/', ReactionView.as_view(), name='react-post'),
+    path('workout-posts/<int:post_id>/comments/', CommentViewSet.as_view({'get': 'list', 'post': 'create'}), name='comment-post'),
     
     #chat urls
     path('chat-partners-for-user/<int:user_id>/', chat_partners_for_user),

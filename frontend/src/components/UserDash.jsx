@@ -120,54 +120,73 @@ const UserDash = () => {
 
   // WebSocket connection
   useEffect(() => {
-    const newSocket = new WebSocket("ws://localhost:8000/ws/workout_feed/");
+  const newSocket = new WebSocket("ws://localhost:8000/ws/workout_feed/");
 
-    newSocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+  newSocket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
 
-      if (data.type === 'like_update') {
-        setWorkoutPosts(prev => prev.map(post => 
-          post.id === data.post_id 
-            ? { 
-                ...post, 
-                likes_count: data.likes_count,
-                is_liked: data.is_liked ?? post.is_liked
-              } 
-            : post
-        ));
-      }
+    if (data.type === 'like_update') {
+      setWorkoutPosts(prev => prev.map(post => 
+        post.id === data.post_id 
+          ? { 
+              ...post, 
+              likes_count: data.likes_count,
+              is_liked: data.is_liked ?? post.is_liked
+            } 
+          : post
+      ));
+    }
 
-      if (data.type === 'comment_new') {
-        setPostComments(prev => ({
-          ...prev,
-          [data.post_id]: [...(prev[data.post_id] || []), data.comment]
-        }));
-        setWorkoutPosts(prev => prev.map(post =>
+    if (data.type === 'comment_new') {
+      // Update postComments (what the UI reads from)
+      setPostComments(prev => ({
+        ...prev,
+        [data.post_id]: [...(prev[data.post_id] || []), data.comment]
+      }));
+      
+      // Update comment count in workoutPosts
+      setWorkoutPosts(prev => prev.map(post =>
+        post.id === data.post_id
+          ? { ...post, comments_count: (post.comments_count || 0) + 1 }
+          : post
+      ));
+    }
+
+    if (data.type === 'reaction_update') {
+      setWorkoutPosts(prev =>
+        prev.map(post =>
           post.id === data.post_id
-            ? { ...post, comments_count: (post.comments_count || 0) + 1 }
+            ? {
+                ...post,
+                reactions: [...(post.reactions || []), {
+                  emoji: data.emoji,
+                  user: data.user
+                }]
+              }
             : post
-        ));
-      }
-    };
+        )
+      );
+    }
+  };
 
     newSocket.onopen = () => {
-      console.log('WebSocket connected');
-    };
+    console.log('WebSocket connected');
+  };
 
-    newSocket.onclose = () => {
-      console.log('WebSocket disconnected');
-    };
+  newSocket.onclose = () => {
+    console.log('WebSocket disconnected');
+  };
 
-    newSocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+  newSocket.onerror = (error) => {
+    console.error('WebSocket error:', error);
+  };
 
-    setSocket(newSocket);
+  setSocket(newSocket);
 
-    return () => {
-      newSocket.close();
-    };
-  }, []);
+  return () => {
+    newSocket.close();
+  };
+}, []);
 
   // Fetch user data and apply theme
   useEffect(() => {
@@ -260,11 +279,50 @@ const UserDash = () => {
     }
   };
 
-  // Comment functionality - FIXED
   const handleComment = async (postId) => {
-    const commentText = newComments[postId]?.trim();
-    if (!commentText) return;
+  const commentText = newComments[postId]?.trim();
+  if (!commentText) return;
+  
+  try {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      console.error('No auth token found');
+      return;
+    }
+
+    console.log("Comment being sent:", commentText);
+    const response = await axios.post(`http://localhost:8000/api/workout-posts/${postId}/comments/`,
+      { text: commentText },
+      { headers: { Authorization: `Token ${token}` } }
+    );
     
+    // Clear the comment input
+    setNewComments(prev => ({ ...prev, [postId]: '' }));
+    
+    // // Update postComments state (this is what the UI reads from)
+    // setPostComments(prev => ({ 
+    //   ...prev, 
+    //   [postId]: [...(prev[postId] || []), response.data]
+    // }));
+    
+    // Also update the post's comment count in workoutPosts
+    setWorkoutPosts(prev => prev.map(post =>
+      post.id === postId
+        ? { 
+            ...post, 
+            comments_count: (post.comments_count || 0) + 1
+          }
+        : post
+    ));
+  } catch (error) {
+    console.error('Error posting comment:', error);
+  }
+};
+
+  const toggleComments = async (postId) => {
+  setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+  
+  if (!postComments[postId] && !showComments[postId]) {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -272,49 +330,17 @@ const UserDash = () => {
         return;
       }
 
-      const response = await axios.post(`http://localhost:8000/api/workout-posts/${postId}/comment/`,
-        { text: commentText },
-        { headers: { Authorization: `Token ${token}` } }
-      );
+      const response = await axios.get(`http://localhost:8000/api/workout-posts/${postId}/comments/`, {
+        headers: { Authorization: `Token ${token}` }
+      });
       
-      // Clear the comment input
-      setNewComments(prev => ({ ...prev, [postId]: '' }));
-      
-      // Update local state
-      setWorkoutPosts(prev => prev.map(post =>
-        post.id === postId
-          ? { 
-              ...post, 
-              comments: [...(post.comments || []), response.data],
-              comments_count: (post.comments_count || 0) + 1
-            }
-          : post
-      ));
-    } catch (error) {
-      console.error('Error posting comment:', error);
+      console.log('Fetched comments for post', postId, ':', response.data); // Debug log
+      setPostComments(prev => ({ ...prev, [postId]: response.data }));
+    } catch (err) {
+      console.error("Error loading comments", err);
     }
-  };
-
-  const toggleComments = async (postId) => {
-    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
-    
-    if (!postComments[postId]) {
-      try {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-          console.error('No auth token found');
-          return;
-        }
-
-        const response = await axios.get(`http://localhost:8000/api/workout-posts/${postId}/comments/`, {
-          headers: { Authorization: `Token ${token}` }
-        });
-        setPostComments(prev => ({ ...prev, [postId]: response.data }));
-      } catch (err) {
-        console.error("Error loading comments", err);
-      }
-    }
-  };
+  }
+};
 
   const handleSlideLeft = (postId) => {
     setCurrentExerciseIndices(prevIndices => {
@@ -539,45 +565,73 @@ const UserDash = () => {
                   {/* Comments Section */}
                   {showComments[post.id] && (
                     <div className="comments-section">
-                      {!postComments[post.id] ? (
-                        <p>Loading comments...</p>
-                      ) : (
-                        <>
-                          <div className="comments-list">
-                            {postComments[post.id].map((comment, index) => (
-                              <div key={index} className="comment">
-                                <strong>{comment.user}:</strong> {comment.text}
-                                <span className="comment-time">{new Date(comment.created_at).toLocaleString()}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="comment-input">
-                            <input
-                              type="text"
-                              placeholder="Add a comment..."
-                              value={newComments[post.id] || ''}
-                              onChange={(e) => setNewComments(prev => ({
-                                ...prev,
-                                [post.id]: e.target.value
-                              }))}
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleComment(post.id);
-                                }
-                              }}
-                            />
-                            <button 
-                              onClick={() => handleComment(post.id)}
-                              disabled={!newComments[post.id]?.trim()}
-                            >
-                              <FaPaperPlane />
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
+  {postComments[post.id] === undefined ? (
+    <p>Loading comments...</p>
+  ) : (
+    <>
+      {postComments[post.id].length === 0 ? (
+        <p>No comments yet. Be the first to comment!</p>
+      ) : (
+        <div className="comments-list">
+          {postComments[post.id].map((comment, index) => (
+            <div key={comment.id || index} className="comment">
+              <strong>{comment.user}:</strong> {comment.text}
+              <span className="comment-time">
+                {new Date(comment.created_at).toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ✅ Always show comment input */}
+      <div className="comment-input">
+        <input
+          type="text"
+          placeholder="Add a comment..."
+          value={newComments[post.id] || ''}
+          onChange={(e) =>
+            setNewComments((prev) => ({
+              ...prev,
+              [post.id]: e.target.value
+            }))
+          }
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleComment(post.id);
+            }
+          }}
+        />
+        <button
+          onClick={() => handleComment(post.id)}
+          disabled={!newComments[post.id]?.trim()}
+        >
+          <FaPaperPlane />
+        </button>
+      </div>
+    </>
+  )}
+</div>
+
                   )}
                 </div>
+                {post.reactions && post.reactions.length > 0 && (() => {
+  const grouped = post.reactions.reduce((acc, r) => {
+    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+    return acc;
+  }, {});
+
+  return (
+    <div className="post-reactions mt-2 flex flex-wrap gap-3 text-xl">
+      {Object.entries(grouped).map(([emoji, count], idx) => (
+        <span key={idx}>
+          {emoji} x{count}
+        </span>
+      ))}
+    </div>
+  );
+})()}
+
               </div>
             ))
           ) : (

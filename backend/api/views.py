@@ -18,6 +18,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
 from channels.layers import get_channel_layer
+from rest_framework import serializers
 from asgiref.sync import async_to_sync
 from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, SavedDietType, DietType, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan, WorkoutPlanTemplate, TrainerReview, WorkoutPostComment, WorkoutPostLike, WorkoutPostReaction
 from .serializers import (
@@ -438,6 +439,10 @@ class WorkoutPostListView(generics.ListAPIView):
     serializer_class = WorkoutPostSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_serializer_context(self):
+        return {"request": self.request}
+
+
 class ToggleLikeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -494,18 +499,32 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return WorkoutPostComment.objects.filter(post__id=self.kwargs['post_id'])
+        post_id = self.kwargs.get('post_id')
+        print(" Fetching comments for post_id:", post_id)
+        return WorkoutPostComment.objects.filter(post__id=post_id).order_by('created_at')
 
     def perform_create(self, serializer):
-        comment = serializer.save(user=self.request.user)
-        async_to_sync(get_channel_layer().group_send)(
-            'workout_feed',
-            {
-                'type': 'comment.new',
-                'post_id': comment.post.id,
-                'comment': WorkoutPostCommentSerializer(comment).data
-            }
-        )
+     post_id = self.kwargs.get('post_id')
+     post = get_object_or_404(WorkoutPost, id=post_id)
+
+     serializer.is_valid(raise_exception=True)  # Safe
+     comment = serializer.save(user=self.request.user, post=post)
+
+     async_to_sync(get_channel_layer().group_send)(
+        'workout_feed',
+        {
+            'type': 'comment.new',
+            'post_id': post.id,
+            'comment': WorkoutPostCommentSerializer(comment).data
+        }
+    )
+
+
+
+
+
+
+
 
 
 # ✅ DIET VIEWSET

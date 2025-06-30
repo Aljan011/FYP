@@ -186,25 +186,31 @@ class WorkoutSessionSerializer(serializers.ModelSerializer):
 class WorkoutPostSerializer(serializers.ModelSerializer):
     workout_details = serializers.SerializerMethodField()
     user = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
+    reactions = serializers.SerializerMethodField()
 
     class Meta:
         model = WorkoutPost
-        fields = ['id', 'user', 'workout', 'caption', 'posted_at', 'workout_details']
-        read_only_fields = [ 'user', 'posted_at', 'workout_details']
-        
+        fields = [
+            'id', 'user', 'workout', 'caption', 'posted_at',
+            'workout_details', 'likes_count', 'is_liked', 'comments_count', 'reactions'
+        ]
+        read_only_fields = ['user', 'posted_at', 'workout_details']
+
     def get_user(self, obj):
-        return obj.user.username 
+        return obj.user.username
 
     def get_workout_details(self, obj):
         session = getattr(obj.workout, 'session', None)
         exercises = obj.workout.exercises.all()
         exercise_data = []
 
-        # Loop over exercises and get sets from workout.sets
         for exercise in exercises:
             exercise_sets = [
                 s for s in obj.workout.sets
-                if s.get('exercise') == exercise.name  # Match by name or ID
+                if s.get('exercise') == exercise.name
             ]
             exercise_data.append({
                 'name': exercise.name,
@@ -218,6 +224,23 @@ class WorkoutPostSerializer(serializers.ModelSerializer):
             "total_exercises": session.total_exercises if session else None,
             "exercises": exercise_data
         }
+
+    def get_likes_count(self, obj):
+        return obj.likes.count()
+
+    def get_is_liked(self, obj):
+        user = self.context.get("request").user
+        return obj.likes.filter(user=user).exists()
+
+    def get_comments_count(self, obj):
+        return obj.comments.count()
+
+    def get_reactions(self, obj):
+        return [
+            {"emoji": r.emoji, "user": r.user.username}
+            for r in obj.reactions.all()
+        ]
+
         
 class WorkoutPostCommentSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
@@ -226,6 +249,10 @@ class WorkoutPostCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkoutPostComment
         fields = ['id', 'user', 'post', 'parent', 'text', 'created_at', 'replies']
+        extra_kwargs = {
+            'post': {'required': False},  
+            'parent': {'required': False, 'allow_null': True}
+        }
 
     def get_replies(self, obj):
         return WorkoutPostCommentSerializer(obj.replies.all(), many=True).data
