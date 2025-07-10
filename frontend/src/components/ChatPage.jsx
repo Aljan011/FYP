@@ -20,36 +20,33 @@ const ChatPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const savedDarkMode = localStorage.getItem("darkMode") === "true";
-    setDarkMode(savedDarkMode);
+  const token = localStorage.getItem("authToken");
+  const storedUserId = localStorage.getItem("userId");
+  const storedRole = localStorage.getItem("userRole");
 
-    if (savedDarkMode) {
-      document.body.classList.add("dark-mode");
-    }
+  console.log("TOKEN:", token);
+  console.log("USER ID:", storedUserId);
+  console.log("USER ROLE:", storedRole);
 
-    const token = localStorage.getItem("authToken");
-    const storedUserId = localStorage.getItem("userId");
-    const storedRole = localStorage.getItem("userRole");
+  if (token && storedUserId && storedRole) {
+    setAuthToken(token);
+    setUserId(parseInt(storedUserId));
+    setUserRole(storedRole);
+    
+    axiosInstance.defaults.headers["Authorization"] = `Token ${token}`;
 
-    if (token && storedUserId && storedRole) {
-      setAuthToken(token);
-      const currentUserId = parseInt(storedUserId);
-      setUserId(currentUserId);
-      setUserRole(storedRole);
+    axiosInstance
+      .get(`/chat-partners-for-user/${storedUserId}/`)
+      .then((response) => {
+        console.log("Partner data:", response.data);
+        setPartners(response.data);
+      })
+      .catch((error) => console.error("Failed to load chat partners", error));
+  } else {
+    console.error("Missing userId, token, or role");
+  }
+}, []);
 
-      axiosInstance.defaults.headers["Authorization"] = `Token ${token}`;
-
-      axiosInstance
-        .get(`/chat-partners-for-user/${currentUserId}/`)
-        .then((response) => {
-          console.log("Partner data:", response.data);
-          setPartners(response.data);
-        })
-        .catch((error) => console.error("Failed to load chat partners", error));
-    } else {
-      console.error("Missing userId, token, or role");
-    }
-  }, []);
 
   const refreshPartners = () => {
   axiosInstance

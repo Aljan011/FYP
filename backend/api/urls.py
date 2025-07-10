@@ -4,7 +4,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from django.conf.urls.static import static
 from django.conf import settings
 from . import views
-from .views import RegisterUserView, ApproveUserView, LoginView, UserProfileView, DietViewSet, RecipeViewSet, WorkoutViewSet, UserWorkoutList, WorkoutPostListView, WorkoutPostCreateView, ToggleLikeView, ReactionView, CommentViewSet, WorkoutPlanTemplateViewSet, WorkoutPlanViewSet, chat_partners_for_user, get_chat_history, post_trainer_review, saved_diet_types
+from .views import RegisterUserView, ApproveUserView, LoginView, UserProfileView, DietViewSet, RecipeViewSet, WorkoutViewSet, UserWorkoutList, WorkoutPostListView, WorkoutPostCreateView, ToggleLikeView, ReactionView, CommentViewSet, WorkoutPlanTemplateViewSet, WorkoutPlanViewSet, chat_partners_for_user, get_chat_history, post_trainer_review, saved_diet_types, UserAchievementList, AssignedDietViewSet, DietTypeViewSet
 
 # Initialize the router
 router = DefaultRouter()
@@ -19,6 +19,10 @@ router.register(r'workout_exercise_sets', views.WorkoutExerciseSetViewSet, basen
 router.register(r'workout-plans', WorkoutPlanViewSet, basename='workoutplan')
 router.register(r'plan-templates', WorkoutPlanTemplateViewSet, basename='plantemplate')
 router.register(r'diets', DietViewSet)
+router.register(r'assigned-diets', AssignedDietViewSet, basename='assigned-diet')
+router.register(r'diet-types', DietTypeViewSet, basename='diet-type')
+
+
 router.register(r'recipes', RecipeViewSet)
 
 # Define the API URLs
@@ -60,6 +64,9 @@ path("trainers/<int:trainer_id>/reviews/post/", post_trainer_review, name="train
 
 #diet types
     path("saved-diets/", saved_diet_types, name="saved-diets"),
+    
+# User Achievements
+path("user/achievements/", views.UserAchievementList.as_view(), name="user-achievements"),
 
 
     # Django REST Framework's built-in login/logout endpoints

@@ -271,6 +271,19 @@ class Ingredient(models.Model):
     def __str__(self):
         return f"{self.quantity} {self.name}"
     
+# models.py
+
+class AssignedDiet(models.Model):
+    trainer = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='assigned_diets', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='received_diets', on_delete=models.CASCADE)
+    diet_type = models.ForeignKey(DietType, related_name='assigned_users', on_delete=models.CASCADE)
+    notes = models.TextField(blank=True)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.trainer.username} assigned {self.diet_type.name} to {self.user.username}"
+
+    
 #chat models
 class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
@@ -283,4 +296,26 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.sender.username} → {self.receiver.username}: {self.content[:30]}"
+    
+class Achievement(models.Model):
+    code = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    icon = models.ImageField(upload_to='achievement_icons/', null=True, blank=True)  # Optional
+
+    def __str__(self):
+        return self.name
+
+
+class UserAchievement(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='achievements')
+    achievement = models.ForeignKey(Achievement, on_delete=models.CASCADE)
+    earned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'achievement')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.achievement.name}"
+
 

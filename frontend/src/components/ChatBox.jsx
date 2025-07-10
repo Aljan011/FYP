@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import axiosInstance from "../axiosInstance";
 import PlanModal from "./PlanModal";
+import DietModal from "./DietModal";
+
 import "../css/ChatBox.css";
 
 const ChatBox = ({ senderId, receiverId, roomName, token, darkMode, userRole, onNewMessage }) => {
@@ -12,6 +14,7 @@ const ChatBox = ({ senderId, receiverId, roomName, token, darkMode, userRole, on
   const socketRef = useRef(null);
   const chatContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const [showDietModal, setShowDietModal] = useState(false);
 
   const computedRoomName = `chat_${Math.min(senderId, receiverId)}_${Math.max(senderId, receiverId)}`;
 
@@ -166,13 +169,18 @@ const ChatBox = ({ senderId, receiverId, roomName, token, darkMode, userRole, on
   return (
     <div className={`chat-wrapper ${darkMode ? "dark-mode" : ""}`}>
       <div className="chat-header">
-        <h3>Chat</h3>
-        {userRole === 'trainer' && senderId && receiverId && (
-          <button className="plan-button" onClick={() => setShowPlanModal(true)}>
-            ➕ Assign Workout Plan
-          </button>
-        )}
-      </div>
+  <h3>Chat</h3>
+  {userRole === 'trainer' && senderId && receiverId && (
+    <>
+      <button className="plan-button" onClick={() => setShowPlanModal(true)}>
+        ➕ Assign Workout Plan
+      </button>
+      <button className="plan-button" onClick={() => setShowDietModal(true)}>
+        🥗 Assign Diet Plan
+      </button>
+    </>
+  )}
+</div>
 
       <div className="chat-box" ref={chatContainerRef}>
         {messages.map((msg, idx) => (
@@ -238,6 +246,13 @@ const ChatBox = ({ senderId, receiverId, roomName, token, darkMode, userRole, on
           onClose={() => setShowPlanModal(false)}
         />
       )}
+      {showDietModal && (
+  <DietModal
+    receiverId={receiverId}
+    authToken={token}
+    onClose={() => setShowDietModal(false)}
+  />
+)}
     </div>
   );
 };

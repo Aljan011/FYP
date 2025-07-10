@@ -50,50 +50,61 @@ const AuthPage = () => {
     }
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoginError(null);
-    setIsLoading(true);
+ const handleLogin = async (e) => {
+  e.preventDefault();
+  setLoginError(null);
+  setIsLoading(true);
 
-    try {
-      const response = await axiosInstance.post('/login/', loginData);
-      const data = response.data;
+  try {
+    const response = await axiosInstance.post('/login/', loginData);
+    const data = response.data;
 
-      if (data.token) {
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.id);
-        localStorage.setItem('userRole', data.role);
-        axiosInstance.defaults.headers['Authorization'] = `Token ${data.token}`;
+    console.log('LOGIN RESPONSE data:', data);
 
-        const profileRes = await axiosInstance.get('/profile/');
-        if (profileRes.status === 200) {
-          const role = profileRes.data.role;
-          localStorage.setItem('userRole', data.role);
-          setLoginSuccess(true);
-          setTimeout(() => {
-            const from = location.state?.from?.pathname || '/UserDash';
-            navigate(from, { replace: true });
-          }, 1500);
-        } else {
-          setLoginError('Failed to retrieve user profile.');
-          setIsLoading(false);
-        }
+    if (data.token) {
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userId', data.id);
+      localStorage.setItem('userRole', profileRes.data.role);
+
+
+      axiosInstance.defaults.headers['Authorization'] = `Token ${data.token}`;
+
+      const profileRes = await axiosInstance.get('/profile/');
+      console.log('PROFILE RES:', profileRes);
+
+      if (profileRes.status === 200) {
+        const role = profileRes.data.role;
+        console.log('ROLE FROM PROFILE:', role);
+
+        localStorage.setItem('userRole', role);  // Save role only here
+
+        setLoginSuccess(true);
+        setTimeout(() => {
+          const from = location.state?.from?.pathname || '/UserDash';
+          navigate(from, { replace: true });
+        }, 1500);
       } else {
-        setLoginError('Login failed. No token received.');
+        setLoginError('Failed to retrieve user profile.');
         setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      if (error.response?.status === 403) {
-        setLoginError('Your account is pending admin approval.');
-      } else if (error.response?.data?.detail) {
-        setLoginError(error.response.data.detail);
-      } else {
-        setLoginError('Network or server error. Please try again.');
-      }
+    } else {
+      setLoginError('Login failed. No token received.');
       setIsLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('Login error:', error);
+    if (error.response?.status === 403) {
+      setLoginError('Your account is pending admin approval.');
+    } else if (error.response?.data?.detail) {
+      setLoginError(error.response.data.detail);
+    } else {
+      setLoginError('Network or server error. Please try again.');
+    }
+    setIsLoading(false);
+  }
+};
+
+
 
   const handleRegistration = async (e) => {
     e.preventDefault();

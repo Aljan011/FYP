@@ -4,14 +4,15 @@ from .models import (
     Exercise, WorkoutSession, WorkoutExerciseSet, WorkoutPlan, Workout, WorkoutTracking, WorkoutPost, WorkoutPlanTemplate, WorkoutPostComment,
     WorkoutPostLike, WorkoutPostReaction, WorkoutPostReaction,
     UserProfile, TrainerReview,
-    Diet, Recipe, RecipeStep, Ingredient, DietType, SavedDietType
+    Diet, Recipe, RecipeStep, Ingredient, DietType, SavedDietType, AssignedDiet,
+    Achievement, UserAchievement
 )
 
 # Basic User serializer
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name", "is_active"]
+        fields = ["id", "username", "email", "first_name", "last_name", "is_active", "role"]
         read_only_fields = ["is_active"]
 
 # Registration serializer with profile fields
@@ -288,9 +289,10 @@ class WorkoutPlanTemplateSerializer(serializers.ModelSerializer):
 
 # --- Diet Type (basic) ---
 class DietTypeSerializer(serializers.ModelSerializer):
+    diet = serializers.StringRelatedField()
     class Meta:
         model = DietType
-        fields = ['id', 'name', 'goal', 'foods', 'avoid']
+        fields = '__all__'
 
 
 # --- Recipe ---
@@ -350,6 +352,15 @@ class SavedDietTypeSerializer(serializers.ModelSerializer):
         model = SavedDietType
         fields = ['id', 'diet_type', 'saved_at']
 
+# serializers.py
+
+class AssignedDietSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssignedDiet
+        fields = '__all__'
+        read_only_fields = ['trainer', 'id', 'assigned_at'] 
+
+
 
 # --- Recipe Step ---
 class RecipeStepSerializer(serializers.ModelSerializer):
@@ -377,3 +388,18 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'description', 'image', 'prep_time',
                   'calories', 'protein', 'carbs', 'fat', 'steps', 'ingredients']
         read_only_fields = ['id']
+        
+# achievements and badges 
+class AchievementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Achievement
+        fields = ['id', 'code', 'name', 'description', 'icon']
+
+class UserAchievementSerializer(serializers.ModelSerializer):
+    achievement = AchievementSerializer()
+
+    class Meta:
+        model = UserAchievement
+        fields = ['id', 'achievement', 'earned_at']
+
+

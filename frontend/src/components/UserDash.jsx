@@ -13,9 +13,9 @@ function renderStars(rating) {
 
   const stars = [];
 
-  for (let i = 0; i < fullStars; i++) stars.push(<FaStar key={`full-${i}`} className="text-yellow-400" />);
-  if (halfStar) stars.push(<FaStarHalfAlt key="half" className="text-yellow-400" />);
-  for (let i = 0; i < emptyStars; i++) stars.push(<FaRegStar key={`empty-${i}`} className="text-yellow-400" />);
+  for (let i = 0; i < fullStars; i++) stars.push(<FaStar key={`full-${i}`} className="star-icon" />);
+  if (halfStar) stars.push(<FaStarHalfAlt key="half" className="star-icon" />);
+  for (let i = 0; i < emptyStars; i++) stars.push(<FaRegStar key={`empty-${i}`} className="star-icon" />);
 
   return stars;
 }
@@ -299,12 +299,6 @@ const UserDash = () => {
     // Clear the comment input
     setNewComments(prev => ({ ...prev, [postId]: '' }));
     
-    // // Update postComments state (this is what the UI reads from)
-    // setPostComments(prev => ({ 
-    //   ...prev, 
-    //   [postId]: [...(prev[postId] || []), response.data]
-    // }));
-    
     // Also update the post's comment count in workoutPosts
     setWorkoutPosts(prev => prev.map(post =>
       post.id === postId
@@ -371,15 +365,20 @@ const UserDash = () => {
   };
 
   if (isLoading) {
-    return <div className="loading-spinner">Loading...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">Loading...</div>
+      </div>
+    );
   }
 
   return (
     <div className={`dashboard-container ${isDarkMode ? 'dark-mode' : ''}`}>
-      <div className="dashboard-header">
+      {/* Header Section */}
+      <header className="dashboard-header">
         <div className="user-welcome">
-          <h1>Welcome, {userData.first_name || userData.username}!</h1>
-          <p>Track your fitness journey and stay motivated</p>
+          <h1 className="welcome-title">Welcome, {userData.first_name || userData.username}!</h1>
+          <p className="welcome-subtitle">Track your fitness journey and stay motivated</p>
         </div>
         <div className="header-actions">
           <button onClick={toggleDarkMode} className="theme-toggle">
@@ -387,7 +386,7 @@ const UserDash = () => {
           </button>
           <Link to="/profile" className="profile-link">
             {userData.profile?.profile_picture ? (
-              <img src={userData.profile.profile_picture} alt="Profile" />
+              <img src={userData.profile.profile_picture} alt="Profile" className="profile-image" />
             ) : (
               <div className="profile-placeholder">
                 {(userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')}
@@ -395,250 +394,356 @@ const UserDash = () => {
             )}
           </Link>
         </div>
-      </div>
+      </header>
 
-      <div className="dashboard-grid">
-        <div className="dashboard-section stats-section">
-          <h2>Your Progress</h2>
+      {/* Main Dashboard Content */}
+     <main className="dashboard-main">
+  {/* Combined Quick Actions and Progress Section */}
+  <div className="top-sections-container">
+    {/* Quick Actions Section */}
+    <section className="quick-actions">
+      <div className="section-header">
+        <h2 className="section-title">Quick Actions</h2>
+      </div>
+      <div className="actions-grid">
+        <Link to="/workouts" className="action-card">
+          <div className="action-icon">💪</div>
+          <div className="action-content">
+            <h3 className="action-title">Start Workout</h3>
+            <p className="action-description">Begin a new training session</p>
+          </div>
+        </Link>
+        <Link to="/diet-plan" className="action-card">
+          <div className="action-icon">🥗</div>
+          <div className="action-content">
+            <h3 className="action-title">View Diet Plans</h3>
+            <p className="action-description">Check your nutrition plans</p>
+          </div>
+        </Link>
+        <Link to="/chat" className="action-card">
+          <div className="action-icon">💬</div>
+          <div className="action-content">
+            <h3 className="action-title">Open Chat</h3>
+            <p className="action-description">Message your trainer in real-time</p>
+          </div>
+        </Link>
+      </div>
+      
+    </section>
+    
+
+        {/* Progress Section - Moved below quick actions */}
+        <section className="progress-section">
+          <div className="section-header">
+            <h2 className="section-title">Your Progress</h2>
+          </div>
           <div className="stats-grid">
             <div className="stat-card">
-              <h3>{workoutStats.totalWorkouts}</h3>
-              <p>Total Workouts</p>
+              <div className="stat-value">{workoutStats.totalWorkouts}</div>
+              <div className="stat-label">Total Workouts</div>
             </div>
             <div className="stat-card">
-              <h3>{workoutStats.totalExercises}</h3>
-              <p>Exercises Done</p>
+              <div className="stat-value">{workoutStats.totalExercises}</div>
+              <div className="stat-label">Exercises Done</div>
             </div>
             <div className="stat-card">
-              <h3>{workoutStats.avgDuration} min</h3>
-              <p>Avg. Duration</p>
+              <div className="stat-value">{workoutStats.avgDuration} min</div>
+              <div className="stat-label">Avg. Duration</div>
             </div>
           </div>
-        </div>
-
-        <div className="my-8 px-4">
-          <h2 className="text-2xl font-bold mb-4">Our Trainers</h2>
-          {trainers.length === 0 ? (
-            <p className="text-gray-500">No trainers found. Check if API returned data.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {trainers.map(trainer => (
-                <div
-                  key={trainer.id}
-                  className="cursor-pointer p-4 bg-white shadow rounded flex items-center gap-4 hover:bg-gray-100 transition"
-                  onClick={() => navigate(`/trainers/${trainer.id}`)}
-                >
-                  <img
-                    src={trainer.profile_picture || "/default-avatar.png"}
-                    alt={trainer.username}
-                    className="w-16 h-16 rounded-full object-cover"
-                  />
-                  <div>
-                    <h3 className="text-lg font-semibold">{trainer.username}</h3>
-                    <div className="flex items-center gap-1">
-                      {renderStars(trainer.average_rating)}
-                      <span className="text-sm text-gray-600">({trainer.average_rating.toFixed(1)} / 5)</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="dashboard-section quick-actions">
-          <h2>Quick Actions</h2>
-          <div className="actions-grid">
-            <Link to="/workouts" className="action-card">
-              <span className="icon">💪</span>
-              <h3>Start Workout</h3>
-              <p>Begin a new training session</p>
-            </Link>
-            <Link to="/diet-plan" className="action-card">
-              <span className="icon">🥗</span>
-              <h3>View Diet Plans</h3>
-              <p>Check your nutrition plans</p>
-            </Link>
-            <Link to="/chat" className="action-card">
-              <span className="icon">💬</span>
-              <h3>Open Chat</h3>
-              <p>Message your trainer in real-time</p>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <div className="global-posts-section">
-        <h2>🏋️ Community Workout Feed</h2>
-        <div className="posts-list">
-          {workoutPosts.length > 0 ? (
-            workoutPosts.map((post) => (
-              <div key={post.id} className="post-card">
-                <div className="post-header">
-                  <h3>{post.workout.title}</h3>
-                  <p><strong>By:</strong> {post.user}</p>
-                </div>
-                
-                {post.caption && <p className="caption">"{post.caption}"</p>}
-                
-                <div className="post-details">
-                  <p><strong>Duration:</strong> {post.workout_details.duration || 'N/A'} mins</p>
-                  <p><strong>Total Sets:</strong> {post.workout_details.total_sets}</p>
-                  <p><strong>Exercises:</strong> {post.workout_details.total_exercises}</p>
-                  <p><strong>Notes:</strong> {post.workout_details.notes}</p>
-
-                  {post.workout_details.exercises?.length > 0 && (
-                    <div className="exercise-slider">
-                      <strong>Exercise Breakdown:</strong>
-                      <div className="slider-wrapper">
-                        <button
-                          className="slider-btn left"
-                          onClick={() => handleSlideLeft(post.id)}
-                        >
-                          ❮
-                        </button>
-
-                        <div className="exercise-slide">
-                          {(() => {
-                            const currentIndex = currentExerciseIndices[post.id] || 0;
-                            const ex = post.workout_details.exercises[currentIndex];
-                            return (
-                              <div className="exercise-block">
-                                <p><strong>{ex.name}</strong></p>
-                                <ul>
-                                  {ex.sets.map((set, i) => (
-                                    <li key={i}>
-                                      {set.reps} reps @ {set.weight} kg
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            );
-                          })()}
-                        </div>
-
-                        <button
-                          className="slider-btn right"
-                          onClick={() => handleSlideRight(post.id)}
-                        >
-                          ❯
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Like and Comment Section */}
-                <div className="post-interactions">
-                  <div className="interaction-buttons">
-                    <button 
-                      className={`like-button ${post.is_liked ? 'liked' : ''}`}
-                      onClick={() => handleLike(post.id)}
-                    >
-                      {post.is_liked ? <FaHeart /> : <FaRegHeart />}
-                      <span>{post.likes_count || 0}</span>
-                      <div className="reaction-menu">
-                        <span onClick={(e) => {
-                          e.stopPropagation();
-                          handleReaction(post.id, '💪');
-                        }}>💪</span>
-                        <span onClick={(e) => {
-                          e.stopPropagation();
-                          handleReaction(post.id, '🔥');
-                        }}>🔥</span>
-                        <span onClick={(e) => {
-                          e.stopPropagation();
-                          handleReaction(post.id, '❤️');
-                        }}>❤️</span>
-                      </div>
-                    </button>
-                    
-                    <button 
-                      className="comment-button"
-                      onClick={() => toggleComments(post.id)}
-                    >
-                      <FaComment />
-                      <span>{post.comments_count || 0}</span>
-                    </button>
-                  </div>
-
-                  {/* Comments Section */}
-                  {showComments[post.id] && (
-                    <div className="comments-section">
-  {postComments[post.id] === undefined ? (
-    <p>Loading comments...</p>
-  ) : (
-    <>
-      {postComments[post.id].length === 0 ? (
-        <p>No comments yet. Be the first to comment!</p>
-      ) : (
-        <div className="comments-list">
-          {postComments[post.id].map((comment, index) => (
-            <div key={comment.id || index} className="comment">
-              <strong>{comment.user}:</strong> {comment.text}
-              <span className="comment-time">
-                {new Date(comment.created_at).toLocaleString()}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ✅ Always show comment input */}
-      <div className="comment-input">
-        <input
-          type="text"
-          placeholder="Add a comment..."
-          value={newComments[post.id] || ''}
-          onChange={(e) =>
-            setNewComments((prev) => ({
-              ...prev,
-              [post.id]: e.target.value
-            }))
-          }
-          onKeyPress={(e) => {
-            if (e.key === 'Enter') {
-              handleComment(post.id);
-            }
-          }}
-        />
-        <button
-          onClick={() => handleComment(post.id)}
-          disabled={!newComments[post.id]?.trim()}
-        >
-          <FaPaperPlane />
-        </button>
-      </div>
-    </>
-  )}
+        </section>
 </div>
-
-                  )}
-                </div>
-                {post.reactions && post.reactions.length > 0 && (() => {
-  const grouped = post.reactions.reduce((acc, r) => {
-    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-    return acc;
-  }, {});
-
-  return (
-    <div className="post-reactions mt-2 flex flex-wrap gap-3 text-xl">
-      {Object.entries(grouped).map(([emoji, count], idx) => (
-        <span key={idx}>
-          {emoji} x{count}
-        </span>
-      ))}
+        {/* Trainers Section -  */}
+        <section className="trainers-section">
+    <div className="section-header">
+      <h2 className="section-title">Our Trainers</h2>
     </div>
-  );
-})()}
-
-              </div>
-            ))
-          ) : (
-            <p>No workout posts found</p>
-          )}
-        </div>
+    {trainers.length === 0 ? (
+      <div className="empty-state">
+        <p className="empty-message">No trainers found. Check if API returned data.</p>
       </div>
+    ) : (
+      <div className="trainers-grid">
+        {trainers.map(trainer => (
+          <div
+            key={trainer.id}
+            className="trainer-card"
+            onClick={() => navigate(`/trainers/${trainer.id}`)}
+          >
+            <div className="trainer-avatar">
+              <img
+                src={trainer.profile_picture || "/default-avatar.png"}
+                alt={trainer.username}
+                className="trainer-image"
+              />
+            </div>
+            <div className="trainer-info">
+              <h3 className="trainer-name">{trainer.username}</h3>
+              <div className="trainer-rating">
+                <div className="stars-container">
+                  {renderStars(trainer.average_rating)}
+                </div>
+                <span className="rating-text">({trainer.average_rating.toFixed(1)} / 5)</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </section>
+
+        {/* Community Workout Feed Section */}
+        <section className="workout-feed">
+          <div className="section-header">
+            <h2 className="section-title">🏋️ Community Workout Feed</h2>
+          </div>
+          <div className="posts-container">
+            {workoutPosts.length > 0 ? (
+              workoutPosts.map((post) => (
+                <article key={post.id} className="post-card">
+                  {/* Post Header */}
+                  <div className="post-header">
+                    <div className="post-user-info">
+                      <div className="user-avatar">
+                        {/* Add user avatar if available */}
+                      </div>
+                      <div className="user-details">
+                        <h3 className="workout-title">{post.workout.title}</h3>
+                        <p className="post-author">By: {post.user}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Post Caption */}
+                  {post.caption && (
+                    <div className="post-caption">
+                      <p className="caption-text">"{post.caption}"</p>
+                    </div>
+                  )}
+                  
+                  {/* Post Details */}
+                  <div className="post-details">
+                    <div className="workout-stats">
+                      {/* <div className="stat-item">
+                        <span className="stat-label">Duration:</span>
+                        <span className="stat-value">{post.workout_details.duration || 'N/A'} mins</span>
+                      </div> */}
+                      <div className="stat-item">
+                        <span className="stat-label">Total Sets:</span>
+                        <span className="stat-value">{post.workout_details.total_sets}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">Exercises:</span>
+                        <span className="stat-value">{post.workout_details.total_exercises}</span>
+                      </div>
+                    </div>
+                    
+                    {post.workout_details.notes && (
+                      <div className="workout-notes">
+                        <span className="notes-label">Notes:</span>
+                        <p className="notes-text">{post.workout_details.notes}</p>
+                      </div>
+                    )}
+
+                    {/* Exercise Slider */}
+                    {post.workout_details.exercises?.length > 0 && (
+                      <div className="exercise-slider">
+                        <div className="slider-header">
+                          <span className="slider-title">Exercise Breakdown:</span>
+                        </div>
+                        <div className="slider-container">
+                          <button
+                            className="slider-btn slider-btn-left"
+                            onClick={() => handleSlideLeft(post.id)}
+                          >
+                            ❮
+                          </button>
+
+                          <div className="exercise-slide">
+                            {(() => {
+                              const currentIndex = currentExerciseIndices[post.id] || 0;
+                              const ex = post.workout_details.exercises[currentIndex];
+                              return (
+                                <div className="exercise-details">
+                                  <h4 className="exercise-name">{ex.name}</h4>
+                                  <div className="sets-list">
+                                    {ex.sets.map((set, i) => (
+                                      <div key={i} className="set-item">
+                                        <span className="set-info">{set.reps} reps @ {set.weight} kg</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+
+                          <button
+                            className="slider-btn slider-btn-right"
+                            onClick={() => handleSlideRight(post.id)}
+                          >
+                            ❯
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+    {/* Post Interactions */}
+    <div className="post-interactions">
+      <div className="interaction-buttons">
+
+        {/* ✅ Wrapper added to group button and menu */}
+        <div className="like-reaction-wrapper">
+          <button 
+            className={`interaction-btn like-button ${post.is_liked ? 'liked' : ''}`}
+            onClick={() => handleLike(post.id)}
+          >
+            <span className="btn-icon">
+              {post.is_liked ? <FaHeart /> : <FaRegHeart />}
+            </span>
+            <span className="btn-count">{post.likes_count || 0}</span>
+          </button>
+
+          {/* ✅ This is now outside the button but still inside the hoverable wrapper */}
+          <div className="reaction-menu">
+            <span 
+              className="reaction-emoji"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReaction(post.id, '💪');
+              }}
+            >
+              💪
+            </span>
+            <span 
+              className="reaction-emoji"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReaction(post.id, '🔥');
+              }}
+            >
+              🔥
+            </span>
+            <span 
+              className="reaction-emoji"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReaction(post.id, '❤️');
+              }}
+            >
+              ❤️
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+                      
+                      <button 
+                        className="interaction-btn comment-button"
+                        onClick={() => toggleComments(post.id)}
+                      >
+                        <span className="btn-icon">
+                          <FaComment />
+                        </span>
+                        <span className="btn-count">{post.comments_count || 0}</span>
+                      </button>
+                    {/* </div> */}
+
+                    {/* Comments Section */}
+                    {showComments[post.id] && (
+                      <div className="comments-section">
+                        {postComments[post.id] === undefined ? (
+                          <div className="comments-loading">
+                            <p>Loading comments...</p>
+                          </div>
+                        ) : (
+                          <div className="comments-container">
+                            {postComments[post.id].length === 0 ? (
+                              <div className="no-comments">
+                                <p>No comments yet. Be the first to comment!</p>
+                              </div>
+                            ) : (
+                              <div className="comments-list">
+                                {postComments[post.id].map((comment, index) => (
+                                  <div key={comment.id || index} className="comment-item">
+                                    <div className="comment-content">
+                                      <span className="comment-author">{comment.user}:</span>
+                                      <span className="comment-text">{comment.text}</span>
+                                    </div>
+                                    <div className="comment-meta">
+                                      <span className="comment-time">
+                                        {new Date(comment.created_at).toLocaleString()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Comment Input */}
+                            <div className="comment-input-container">
+                              <input
+                                type="text"
+                                className="comment-input"
+                                placeholder="Add a comment..."
+                                value={newComments[post.id] || ''}
+                                onChange={(e) =>
+                                  setNewComments((prev) => ({
+                                    ...prev,
+                                    [post.id]: e.target.value
+                                  }))
+                                }
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleComment(post.id);
+                                  }
+                                }}
+                              />
+                              <button
+                                className="comment-submit-btn"
+                                onClick={() => handleComment(post.id)}
+                                disabled={!newComments[post.id]?.trim()}
+                              >
+                                <FaPaperPlane />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  {/* </div> */}
+
+                  {/* Post Reactions Display */}
+                  {post.reactions && post.reactions.length > 0 && (
+                    <div className="post-reactions">
+                      {(() => {
+                        const grouped = post.reactions.reduce((acc, r) => {
+                          acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                          return acc;
+                        }, {});
+
+                        return Object.entries(grouped).map(([emoji, count], idx) => (
+                          <div key={idx} className="reaction-group">
+                            <span className="reaction-emoji">{emoji}</span>
+                            <span className="reaction-count">x{count}</span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  )}
+                </article>
+              ))
+            ) : (
+              <div className="empty-state">
+                <p className="empty-message">No workout posts found</p>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
     </div>
   );
 };

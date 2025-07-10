@@ -20,15 +20,19 @@ from django.contrib.auth import get_user_model
 from channels.layers import get_channel_layer
 from rest_framework import serializers
 from asgiref.sync import async_to_sync
-from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, SavedDietType, DietType, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan, WorkoutPlanTemplate, TrainerReview, WorkoutPostComment, WorkoutPostLike, WorkoutPostReaction
+from .permissions import IsTrainer
+
+from .achivements import check_achievements
+from .models import Exercise, WorkoutSession, WorkoutExerciseSet, Diet, SavedDietType, DietType, Recipe, UserProfile, Workout, WorkoutPost, Message, WorkoutPlan, WorkoutPlanTemplate, TrainerReview, WorkoutPostComment, WorkoutPostLike, WorkoutPostReaction, UserAchievement, Achievement, AssignedDiet
 from .serializers import (
     ExerciseSerializer, WorkoutSerializer,
     WorkoutSessionSerializer, 
     WorkoutExerciseSetSerializer, WorkoutPostSerializer, WorkoutPlanSerializer, WorkoutPlanTemplateSerializer, WorkoutPostCommentSerializer,
     WorkoutPostLikeSerializer, WorkoutPostReactionSerializer,
     DietSerializer, SavedDietTypeSerializer,
-    RecipeSerializer, RecipeDetailSerializer, 
-    RegistrationSerializer, UserSerializer, TrainerProfilePublicSerializer, TrainerReviewSerializer
+    RecipeSerializer, RecipeDetailSerializer,  AssignedDietSerializer, DietTypeSerializer,
+    RegistrationSerializer, UserSerializer, TrainerProfilePublicSerializer, TrainerReviewSerializer,
+    UserAchievementSerializer, WorkoutPostSerializer, WorkoutPostCommentSerializer
 )
 
 
@@ -106,6 +110,8 @@ class UserProfileView(APIView):
     def get(self, request):
         user = request.user
         profile, created = UserProfile.objects.get_or_create(user=user)
+        
+        print("DEBUG: Profile role for", user.username, "→", profile.role)
         
         user_data = {
     "username": user.username,
@@ -384,7 +390,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
             workout_session.notes = notes
         workout_session.save()
 
-        #  Create a Workout entry
+        # Create a Workout entry
         workout = Workout.objects.create(
             user=request.user,
             title=f"Workout on {workout_session.started_at.strftime('%Y-%m-%d')}",
@@ -393,13 +399,11 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
             notes=notes,
         )
 
-        #  Add exercises
         exercises = Exercise.objects.filter(
             id__in=workout_session.exercise_sets.values_list('exercise_id', flat=True)
         ).distinct()
         workout.exercises.set(exercises)
 
-        #  Add sets
         sets = []
         for exercise_set in workout_session.exercise_sets.all():
             sets.append({
@@ -412,11 +416,94 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         workout.sets = sets
         workout.save()
 
-        # 🔗 Link the WorkoutSession to Workout
         workout.session = workout_session
         workout.save()
 
-        return Response({"message": "Workout finished successfully", "workout_id": workout.id}, status=status.HTTP_200_OK)
+        # Track awarded achievement codes
+        awarded_codes = set()
+        print("Starting badge check...")
+
+        def award_achievement(user, base_code, exercise):
+            code= f"{base_code}_{exercise.id}"
+            try:
+                print(f"Attempting to award {code} to {user.username}")
+                achievement = Achievement.objects.get(code=code)
+                obj, created = UserAchievement.objects.get_or_create(user=user, achievement=achievement)
+                if created:
+                    print(f"🏆 {code} awarded for {exercise.name}")
+                    awarded_codes.add(code)
+                else:
+                    print(f"Already earned: {code}")
+            except Achievement.DoesNotExist:
+                print(f"Achievement {code} not found in DB")
+
+        # Personal Best detection
+        is_first_workout = not WorkoutExerciseSet.objects.filter(
+            workout_session__user=request.user
+        ).exclude(workout_session=workout_session).exists()       
+        
+        personal_bests = {}
+        for ex in workout.exercises.all():
+            sets = workout_session.exercise_sets.filter(exercise=ex)
+
+            max_reps = max([s.reps for s in sets])
+            max_weight = max([s.weight or 0 for s in sets])
+
+            previous_sets = WorkoutExerciseSet.objects.filter(
+             workout_session__user=request.user,
+             exercise=ex
+            ).exclude(workout_session=workout_session)
+            
+            # previous_max_reps = 0
+            # previous_max_weight = 0
+            if not is_first_workout and previous_sets.exists():
+                previous_max_reps = previous_sets.aggregate(Max("reps"))["reps__max"] or 0
+                previous_max_weight = previous_sets.aggregate(Max("weight"))["weight__max"] or 0
+
+                print(f"Checking PB for {ex.name}... max reps: {max_reps}, max weight: {max_weight}")
+                print(f"Previous max reps: {previous_max_reps}, weight: {previous_max_weight}")
+            
+
+                if max_reps > previous_max_reps:
+                  award_achievement(request.user, "PB_REPS")
+                  personal_bests[ex.name] = personal_bests.get(ex.name, {})
+                  personal_bests[ex.name]["reps"] = max_reps
+
+                if max_weight > previous_max_weight:
+                  award_achievement(request.user, "PB_WEIGHT",ex)
+                  personal_bests[ex.name] = personal_bests.get(ex.name, {})
+                  personal_bests[ex.name]["weight"] = max_weight
+
+            else:
+             print(f"Skipping PB check for {ex.name} (first time logging this exercise)")
+           
+
+
+        workout.personal_best = personal_bests
+        workout.save()
+
+        # Other achievements (e.g., 10 workouts, streaks)
+        check_achievements(request.user, current_workout=workout)
+
+        # Serialize newly awarded achievements
+        new_achievements = UserAchievement.objects.filter(
+            user=request.user,
+            achievement__code__in=awarded_codes
+        ).order_by('-earned_at')
+
+        serializer = UserAchievementSerializer(new_achievements, many=True)
+
+        return Response({
+    "message": workout.notes,
+    "workout_id": workout.id,
+    "sets": workout.sets,
+    "exercises": list(workout.exercises.values("id", "name", "target")),
+    "new_achievements": serializer.data,
+    "personal_bests": personal_bests,  
+}, status=status.HTTP_200_OK)
+        
+
+
 
 
 # ✅ WORKOUT EXERCISE SET VIEWSET
@@ -595,6 +682,69 @@ def saved_diet_types(request):
             return Response({"message": "Deleted from saved"})
         except SavedDietType.DoesNotExist:
             return Response({"error": "Not found"}, status=404)
+        
+class DietTypeViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = DietTypeSerializer
+    # permission_classes = [isAuthenticated]
+
+    def get_queryset(self):
+        return DietType.objects.all()
+
+class AssignedDietViewSet(viewsets.ModelViewSet):
+    serializer_class = AssignedDietSerializer
+    permission_classes = [IsAuthenticated , IsTrainer]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.profile.role == 'trainer':
+            return AssignedDiet.objects.filter(trainer=user)
+        return AssignedDiet.objects.filter(user=user)
+
+    def perform_create(self, serializer):
+        serializer.save(trainer=self.request.user)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsTrainer])
+    def send(self, request, pk=None):
+        assigned_diet = self.get_object()
+        trainer = request.user
+        user = assigned_diet.user
+        diet = assigned_diet.diet_type
+
+        # Format message content
+        content_lines = [
+            f"🥗 Diet Plan: {diet.name} ({diet.diet.name})",
+            f"🎯 Goal: {diet.goal}",
+            f"✅ Recommended Foods: {diet.foods}",
+            f"❌ Avoid: {diet.avoid}"
+        ]
+        if assigned_diet.notes:
+            content_lines.append(f"📝 Notes: {assigned_diet.notes}")
+        content = "\n".join(content_lines)
+
+        # Save chat message
+        msg = Message.objects.create(
+            sender=trainer,
+            receiver=user,
+            content=content,
+            message_type="diet_card"
+        )
+
+        # Send via WebSocket
+        room_name = f"chat_{min(trainer.id, user.id)}_{max(trainer.id, user.id)}"
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            room_name,
+            {
+                "type": "chat_message",
+                "sender_id": trainer.id,
+                "receiver_id": user.id,
+                "content": content,
+                "timestamp": msg.timestamp.isoformat(),
+                "message_type": "diet_card",
+            }
+        )
+
+        return Response({"detail": "Diet plan sent via chat."}, status=201)
     
 #  CHAT VIEWS
 @api_view(['GET'])
@@ -605,27 +755,18 @@ def chat_partners_for_user(request, user_id):
     except UserProfile.DoesNotExist:
         return Response({"detail": "UserProfile not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    # Fetch matching partners based on role
-    if current_profile.role == 'user':
-        profiles = UserProfile.objects.select_related('user').filter(
-            role='trainer'
-        ).exclude(user__id=user_id)
-    else:
-        profiles = UserProfile.objects.select_related('user').filter(
-            role='user'
-        ).exclude(user__id=user_id)
+    # Fetch users opposite of current role
+    target_role = 'trainer' if current_profile.role == 'user' else 'user'
+    
+    profiles = UserProfile.objects.select_related('user').filter(
+        role=target_role,
+        user__is_active=True
+    ).exclude(user__id=user_id)
 
-    # Annotate and sort by latest message
-    profiles = profiles.annotate(
-        last_msg_time=Max('user__sent_messages__timestamp')
-    ).order_by('-last_msg_time')
-
-    # Build response with unread message count
+    # No need to annotate if you just want to return all
     chat_partners = []
-    for profile in profiles:
-        if not profile.user.is_active:
-            continue
 
+    for profile in profiles:
         unread_count = Message.objects.filter(
             sender=profile.user,
             receiver__id=user_id,
@@ -639,7 +780,12 @@ def chat_partners_for_user(request, user_id):
             "unread_count": unread_count
         })
 
+    # Optional: Sort by username or another safe field
+    chat_partners.sort(key=lambda x: x["username"].lower())
+
     return Response(chat_partners)
+
+
 
 
 
@@ -856,5 +1002,13 @@ class WorkoutPlanTemplateViewSet(viewsets.ModelViewSet):
      plan.save()
 
      return Response({"message": "Plan assigned from template", "plan_id": plan.id}, status=201)
+ 
 
-    
+class UserAchievementList(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_achievements = UserAchievement.objects.filter(user=request.user)
+        serializer = UserAchievementSerializer(user_achievements, many=True)
+        return Response(serializer.data)
+  

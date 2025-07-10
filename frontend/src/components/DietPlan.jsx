@@ -13,7 +13,6 @@ const DietPlan = () => {
   const [selectedDiet, setSelectedDiet] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
   const [typeRecipes, setTypeRecipes] = useState([]);
-  const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [recipes, setRecipes] = useState([]);
   const [error, setError] = useState(null);
   const [savedTypeIds, setSavedTypeIds] = useState([]);
@@ -121,7 +120,7 @@ const DietPlan = () => {
     }
   };
 
-  // Handle type click to show type recipes
+  // Handle type click to show type recipes with full recipe details
   const handleTypeClick = async (type) => {
     setSelectedType(type);
     try {
@@ -131,22 +130,24 @@ const DietPlan = () => {
         `http://localhost:8000/api/recipes/by_diet/?diet_id=${type.id}`,
         { headers }
       );
-      setTypeRecipes(res.data);
+      
+      // Fetch full recipe details for each recipe
+      const recipesWithDetails = await Promise.all(
+        res.data.map(async (recipe) => {
+          try {
+            const recipeResponse = await axios.get(`http://localhost:8000/api/recipes/${recipe.id}/`, { headers });
+            return recipeResponse.data;
+          } catch (err) {
+            console.error(`Failed to fetch details for recipe ${recipe.id}:`, err);
+            return recipe; // Return basic recipe if detailed fetch fails
+          }
+        })
+      );
+      
+      setTypeRecipes(recipesWithDetails);
     } catch (err) {
       console.error("Failed to fetch recipes for type:", err);
       setTypeRecipes([]);
-    }
-  };
-
-  // Handle recipe click to show full recipe details
-  const handleRecipeClick = async (recipe) => {
-    try {
-      const token = localStorage.getItem("authToken");
-      const headers = token ? { Authorization: `Token ${token}` } : {};
-      const response = await axios.get(`http://localhost:8000/api/recipes/${recipe.id}/`, { headers });
-      setSelectedRecipe(response.data);
-    } catch (err) {
-      console.error("Failed to load full recipe:", err);
     }
   };
 
@@ -159,7 +160,6 @@ const DietPlan = () => {
     // Reset selected states when changing tabs
     setSelectedDiet(null);
     setSelectedType(null);
-    setSelectedRecipe(null);
     setError(null);
   };
 
@@ -329,98 +329,97 @@ const DietPlan = () => {
                   ) : (
                     // Diet Detail View
                     <div className="dp-diet-detail-container">
-  <button className="dp-back-button" onClick={() => setSelectedDiet(null)}>
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 12H5M12 19l-7-7 7-7" />
-    </svg>
-    <span>Back to Browse</span>
-  </button>
+                      <button className="dp-back-button" onClick={() => setSelectedDiet(null)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                        <span>Back to Browse</span>
+                      </button>
 
-  <div className="dp-diet-header">
-    <h1>{selectedDiet.name}</h1>
-    <p className="dp-diet-description">{selectedDiet.description}</p>
-  </div>
+                      <div className="dp-diet-header">
+                        <h1>{selectedDiet.name}</h1>
+                        <p className="dp-diet-description">{selectedDiet.description}</p>
+                      </div>
 
-  <div className="dp-diet-content">
-    <div className="dp-diet-main-info">
-      <div className="dp-diet-macros">
-        <div className="dp-macro-box">
-          <span className="dp-macro-value">{selectedDiet.protein_ratio}%</span>
-          <span className="dp-macro-label">Protein</span>
-        </div>
-        <div className="dp-macro-box">
-          <span className="dp-macro-value">{selectedDiet.carb_ratio}%</span>
-          <span className="dp-macro-label">Carbs</span>
-        </div>
-        <div className="dp-macro-box">
-          <span className="dp-macro-value">{selectedDiet.fat_ratio}%</span>
-          <span className="dp-macro-label">Fat</span>
-        </div>
-      </div>
+                      <div className="dp-diet-content">
+                        <div className="dp-diet-main-info">
+                          <div className="dp-diet-macros">
+                            <div className="dp-macro-box">
+                              <span className="dp-macro-value">{selectedDiet.protein_ratio}%</span>
+                              <span className="dp-macro-label">Protein</span>
+                            </div>
+                            <div className="dp-macro-box">
+                              <span className="dp-macro-value">{selectedDiet.carb_ratio}%</span>
+                              <span className="dp-macro-label">Carbs</span>
+                            </div>
+                            <div className="dp-macro-box">
+                              <span className="dp-macro-value">{selectedDiet.fat_ratio}%</span>
+                              <span className="dp-macro-label">Fat</span>
+                            </div>
+                          </div>
 
-      {selectedDiet.benefits && (
-        <div className="dp-diet-benefits">
-          <h3>Benefits</h3>
-          <p>{selectedDiet.benefits}</p>
-        </div>
-      )}
-    </div>
+                          {selectedDiet.benefits && (
+                            <div className="dp-diet-benefits">
+                              <h3>Benefits</h3>
+                              <p>{selectedDiet.benefits}</p>
+                            </div>
+                          )}
+                        </div>
 
-    {selectedDiet.types?.length > 0 && (
-      <div className="dp-diet-types-section">
-        <h2>Diet Types</h2>
-        <div className="dp-diet-types-grid">
-          {selectedDiet.types.map((type) => (
-            <div key={type.id} className="dp-diet-type-card" onClick={() => handleTypeClick(type)}>
-              <div className="dp-diet-type-header">
-                <h4>{type.name}</h4>
-                <button
-                  className={`dp-save-button ${savedTypeIds.includes(type.id) ? 'saved' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleSaveDietType(type.id);
-                  }}
-                  title={savedTypeIds.includes(type.id) ? 'Remove from saved' : 'Save diet type'}
-                  aria-label={savedTypeIds.includes(type.id) ? 'Remove from saved' : 'Save diet type'}
-                >
-                  <svg
-                    width="20"
-                    height="18"
-                    viewBox="0 0 24 22"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="heart-svg"
-                  >
-                    <path
-                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                      className="heart-path"
-                    />
-                  </svg>
-                </button>
-              </div>
+                        {selectedDiet.types?.length > 0 && (
+                          <div className="dp-diet-types-section">
+                            <h2>Diet Types</h2>
+                            <div className="dp-diet-types-grid">
+                              {selectedDiet.types.map((type) => (
+                                <div key={type.id} className="dp-diet-type-card" onClick={() => handleTypeClick(type)}>
+                                  <div className="dp-diet-type-header">
+                                    <h4>{type.name}</h4>
+                                    <button
+                                      className={`dp-save-button ${savedTypeIds.includes(type.id) ? 'saved' : ''}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleSaveDietType(type.id);
+                                      }}
+                                      title={savedTypeIds.includes(type.id) ? 'Remove from saved' : 'Save diet type'}
+                                      aria-label={savedTypeIds.includes(type.id) ? 'Remove from saved' : 'Save diet type'}
+                                    >
+                                      <svg
+                                        width="20"
+                                        height="18"
+                                        viewBox="0 0 24 22"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="heart-svg"
+                                      >
+                                        <path
+                                          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                                          className="heart-path"
+                                        />
+                                      </svg>
+                                    </button>
+                                  </div>
 
-              <div className="dp-diet-type-info">
-                <div className="dp-info-item">
-                  <span className="dp-info-label">Goal</span>
-                  <span className="dp-info-value">{type.goal}</span>
-                </div>
-                <div className="dp-info-item">
-                  <span className="dp-info-label">Foods</span>
-                  <span className="dp-info-value">{type.foods}</span>
-                </div>
-                <div className="dp-info-item">
-                  <span className="dp-info-label">Avoid</span>
-                  <span className="dp-info-value">{type.avoid}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
-  </div>
-</div>
-
+                                  <div className="dp-diet-type-info">
+                                    <div className="dp-info-item">
+                                      <span className="dp-info-label">Goal</span>
+                                      <span className="dp-info-value">{type.goal}</span>
+                                    </div>
+                                    <div className="dp-info-item">
+                                      <span className="dp-info-label">Foods</span>
+                                      <span className="dp-info-value">{type.foods}</span>
+                                    </div>
+                                    <div className="dp-info-item">
+                                      <span className="dp-info-label">Avoid</span>
+                                      <span className="dp-info-value">{type.avoid}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
@@ -436,31 +435,31 @@ const DietPlan = () => {
                         return (
                           <div key={saved.id} className="dp-diet-type-card">
                             <div className="dp-diet-type-header">
-  <h4>{type.name}</h4>
-  <button
-    className={`dp-save-button ${savedTypeIds.includes(type.id) ? 'saved' : ''}`}
-    onClick={(e) => {
-      e.stopPropagation();
-      toggleSaveDietType(type.id);
-    }}
-    title={savedTypeIds.includes(type.id) ? 'Remove from saved' : 'Save diet type'}
-    aria-label={savedTypeIds.includes(type.id) ? 'Remove from saved' : 'Save diet type'}
-  >
-    <svg
-      width="20"
-      height="18"
-      viewBox="0 0 24 22"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="heart-svg"
-    >
-      <path
-        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-        className="heart-path"
-      />
-    </svg>
-  </button>
-</div>
+                              <h4>{type.name}</h4>
+                              <button
+                                className={`dp-save-button ${savedTypeIds.includes(type.id) ? 'saved' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleSaveDietType(type.id);
+                                }}
+                                title={savedTypeIds.includes(type.id) ? 'Remove from saved' : 'Save diet type'}
+                                aria-label={savedTypeIds.includes(type.id) ? 'Remove from saved' : 'Save diet type'}
+                              >
+                                <svg
+                                  width="20"
+                                  height="18"
+                                  viewBox="0 0 24 22"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="heart-svg"
+                                >
+                                  <path
+                                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                                    className="heart-path"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
                             {diet && (
                               <div className="dp-plan-image" style={{ marginBottom: '1rem' }}>
                                 <img
@@ -489,11 +488,12 @@ const DietPlan = () => {
                               </div>
                             </div>
                             <button 
-  className="dp-view-recipes-button"
-  onClick={() => handleTypeClick(saved.diet_type)}
->
-  View Recipes
-</button> 
+                              className="dp-view-recipes-button"
+                              onClick={() => handleTypeClick(saved.diet_type)}
+                            
+                            >
+                              View Recipes
+                            </button> 
                           </div>
                         );
                       })}
@@ -511,33 +511,45 @@ const DietPlan = () => {
         </section>
       </main>
       
-      {/* Modals */}
+      {/* Modified Modal - Now shows recipes with steps directly */}
       {selectedType && (
         <div className="dp-recipe-detail-modal">
           <div className="dp-recipe-detail-content">
             <button className="dp-close-button" onClick={() => setSelectedType(null)}>×</button>
 
             <h2>{selectedType.name}</h2>
-            <p><strong>Goal:</strong> {selectedType.goal}</p>
-            <p><strong>Foods:</strong> {selectedType.foods}</p>
-            <p><strong>Avoid:</strong> {selectedType.avoid}</p>
+            <div className="dp-type-info-summary">
+              <p><strong>Goal:</strong> {selectedType.goal}</p>
+              <p><strong>Foods:</strong> {selectedType.foods}</p>
+              <p><strong>Avoid:</strong> {selectedType.avoid}</p>
+            </div>
 
             <h3 style={{ marginTop: '1.5rem' }}>Recipes</h3>
             {typeRecipes.length > 0 ? (
-              <div className="dp-recipe-grid">
+              <div className="dp-recipes-list">
                 {typeRecipes.map((recipe) => (
-                  <div
-                    key={recipe.id}
-                    className="dp-recipe-card"
-                    onClick={() => handleRecipeClick(recipe)}
-                  >
-                    <img src={recipe.image} alt={recipe.title} className="dp-recipe-image" />
-                    <div className="dp-recipe-card-content">
-                      <h3>{recipe.title}</h3>
-                      <div className="dp-recipe-quick-info">
-                        <span>{recipe.prep_time} mins</span>
-                        <span>{recipe.calories} kcal</span>
+                  <div key={recipe.id} className="dp-recipe-detail-card">
+                    <div className="dp-recipe-header">
+                      <h4>{recipe.title}</h4>
+                      <div className="dp-recipe-meta">
+                        <span className="dp-prep-time">{recipe.prep_time} mins</span>
+                        <span className="dp-calories">{recipe.calories} kcal</span>
                       </div>
+                    </div>
+                    
+                    {recipe.description && (
+                      <p className="dp-recipe-description">{recipe.description}</p>
+                    )}
+
+                    <div className="dp-recipe-steps">
+                      <h5>Instructions:</h5>
+                      <ol className="dp-steps-list">
+                        {recipe.steps?.map(step => (
+                          <li key={step.step_number} className="dp-step-item">
+                            {step.description}
+                          </li>
+                        ))}
+                      </ol>
                     </div>
                   </div>
                 ))}
@@ -545,29 +557,6 @@ const DietPlan = () => {
             ) : (
               <p>No recipes found for this type.</p>
             )}
-          </div>
-        </div>
-      )}
-
-      {selectedRecipe && (
-        <div className="dp-recipe-detail-modal">
-          <div className="dp-recipe-detail-content">
-            <button className="dp-close-button" onClick={() => setSelectedRecipe(null)}>×</button>
-
-            <h2>{selectedRecipe.title}</h2>
-            <p>{selectedRecipe.description}</p>
-
-            <div className="dp-macro-info">
-              <p><strong>Prep Time:</strong> {selectedRecipe.prep_time} mins</p>
-              <p><strong>Calories:</strong> {selectedRecipe.calories} kcal</p>
-            </div>
-
-            <h3>Instructions</h3>
-            <ol>
-              {selectedRecipe.steps?.map(step => (
-                <li key={step.step_number}>{step.description}</li>
-              ))}
-            </ol>
           </div>
         </div>
       )}

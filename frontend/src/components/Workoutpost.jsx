@@ -21,11 +21,15 @@ const Workoutpost = () => {
     const [selectedExercise, setSelectedExercise] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
     const [showSummary, setShowSummary] = useState(false);
+    const [badgePopup, setBadgePopup] = useState(false);
+    const [userWorkouts, setUserWorkouts] = useState([]);
+    const [lastSavedWorkout, setLastSavedWorkout] = useState(null);
+
 
     // Workout tracking states
     const [workoutExercises, setWorkoutExercises] = useState([]);
     const [currentWorkout, setCurrentWorkout] = useState({
-        exercises: [],
+                      exercises: [],
         title: "Today's Workout",
         description: "Workout on " + new Date().toLocaleDateString(),
     });
@@ -209,6 +213,23 @@ const Workoutpost = () => {
         }
     };
 
+    const fetchUserWorkouts = async () => {
+  try {
+    const res = await axios.get(`${API_BASE}/workouts/user_workouts/`, {
+      headers: {
+        Authorization: `Token ${token}`,
+      }
+    });
+    setUserWorkouts(res.data);
+  } catch (err) {
+    console.error("Error fetching user workouts:", err);
+  }
+};
+
+useEffect(() => {
+  if (token) fetchUserWorkouts();
+}, []);
+
     const finishWorkout = async () => {
         try {
             if (!token) {
@@ -275,8 +296,8 @@ const Workoutpost = () => {
                             workout_session: sessionId,
                             exercise_id: exercise.id,
                             set_number: i + 1,
-                            weight: set.weight || 0,
-                            reps: set.reps || 0,
+                            weight: parseFloat(set.weight || 0),
+reps: parseInt(set.reps || 0),
                             rest_time: 0, // Default rest time
                         },
                         {
@@ -289,30 +310,86 @@ const Workoutpost = () => {
             }
         
             // 3. Finish Workout
-            const finishRes = await axios.post(
-                `${API_BASE}/workout_sessions/${sessionId}/finish_workout/`,
-                {
-                    notes: userNotes
-                },
-                {
-                    headers: {
-                        Authorization: `Token ${token}`,
-                    },
-                }
-            );
-            
-            console.log(finishRes.data);  // Check the response from finish workout
-    
-            alert("Workout saved successfully!");
-            // Reset workout state
-            setWorkoutExercises([]);
-            setSessionSeconds(0);
-            setUserNotes("");
-        } catch (error) {
-            console.error("Error saving workout:", error);
-            alert(`Failed to save workout: ${error.response?.data?.message || error.message}`);
-        }
-    };
+             const finishRes = await axios.post(
+      `${API_BASE}/workout_sessions/${sessionId}/finish_workout/`,
+      { notes: userNotes },
+      { headers: { Authorization: `Token ${token}` } }
+    );
+
+    console.log("Workout finished:", finishRes.data);
+
+    setLastSavedWorkout(finishRes.data);
+
+    // Show new achievements
+    const newAchievements = finishRes.data.new_achievements;
+
+if (newAchievements && newAchievements.length > 0) {
+  console.log("🎯 Showing badge popup:", newAchievements[0]);  // ✅ Add this here
+  setBadgePopup(newAchievements[0]);
+  setTimeout(() => setBadgePopup(null), 4000);
+}
+
+// Show Personal Best popup even if no new badge was awarded
+const personalBests = finishRes.data.personal_bests;
+if (personalBests && Object.keys(personalBests).length > 0) {
+  const exerciseNames = Object.keys(personalBests);
+  const firstPB = exerciseNames[0];
+  const pbData = personalBests[firstPB];
+  const pbText = `🏋️ Personal Best in ${firstPB}: ${
+    pbData.weight ? `Weight - ${pbData.weight}kg ` : ""
+  }${pbData.reps ? `Reps - ${pbData.reps}` : ""}`;
+
+  console.log("🔥 Showing personal best popup:", pbText);
+  setBadgePopup({
+    achievement: {
+      name: "Personal Best Achieved",
+      description: pbText,
+    },
+  });
+
+  setTimeout(() => setBadgePopup(null), 4000);
+}
+
+
+    alert("Workout saved successfully!");
+
+    // Reset workout state
+    setWorkoutExercises([]);
+    setSessionSeconds(0);
+    setUserNotes("");
+
+  } catch (error) {
+    console.error("Error saving workout:", error);
+    alert(`Failed to save workout: ${error.response?.data?.message || error.message}`);
+  }
+   await fetchUserWorkouts(); // 👈 Add this after success
+};
+          
+
+
+const calculateWorkoutVolume = (sets) => {
+  if (!Array.isArray(sets)) return 0; 
+  return sets.reduce((total, set) => {
+    const weight = parseFloat(set.weight || 0);
+    const reps = parseFloat(set.reps || 0);
+    return total + (weight * reps);
+  }, 0);
+};
+
+const getTargetedMuscles = (exercises) => {
+  if (!Array.isArray(exercises)) return "Unknown";
+  const targets = new Set(exercises.map(ex => ex.target));
+  return Array.from(targets).join(', ');
+};
+
+const getPersonalBestAchievements = (achievements) => {
+  if (!Array.isArray(achievements)) return [];
+
+  return achievements.filter(a =>
+    a.achievement.code === "PB_WEIGHT" || a.achievement.code === "PB_REPS"
+  );
+};
+
 
     // Handle notes change
     const handleNotesChange = (e) => {
@@ -362,10 +439,10 @@ const Workoutpost = () => {
             {/* Exercise Search Section */}
             <section className="search-section">
                 <div className="search-input-wrapper">
-                    <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {/* <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
+                    </svg> */}
                     <input 
                         type="text"
                         id="exerciseSearch"
@@ -583,6 +660,61 @@ const Workoutpost = () => {
                     </div>
                 )}
             </section>
+            {badgePopup && (
+  <div className="badge-popup">
+    <div className="badge-content">
+      <h4>🏆 New Achievement Unlocked!</h4>
+      <p>{badgePopup.achievement.name}</p>
+      <small>{badgePopup.achievement.description}</small>
+    </div>
+  </div>
+)}
+{lastSavedWorkout && (
+  <div className="workout-summary-card">
+    <h3>Workout Summary</h3>
+    <p><strong>Title:</strong> {lastSavedWorkout.message || "Your recent workout"}</p>
+    <p><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
+    <p><strong>Total Volume:</strong> {calculateWorkoutVolume(lastSavedWorkout.sets || [])} kg</p>
+    <p><strong>Targeted Muscles:</strong> {getTargetedMuscles(lastSavedWorkout.exercises || [])}</p>
+
+    {/* New Achievements */}
+    {lastSavedWorkout.new_achievements && lastSavedWorkout.new_achievements.length > 0 && (
+      <div>
+        <h4>🏅 New Achievements</h4>
+        <ul>
+          {lastSavedWorkout.new_achievements.map((achv) => (
+            <li key={achv.id}>
+              {achv.achievement.name}
+              {["PB_WEIGHT", "PB_REPS"].includes(achv.achievement.code) && (
+                <span className="pb-badge" title={achv.achievement.description}>🏆 PB</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    {/* ➕ Add Personal Bests */}
+    {lastSavedWorkout.personal_bests && Object.keys(lastSavedWorkout.personal_bests).length > 0 && (
+      <div className="personal-best-summary">
+        <h4>🔥 Personal Bests This Session</h4>
+        <ul>
+          {Object.entries(lastSavedWorkout.personal_bests).map(([exerciseName, pb]) => (
+            <li key={exerciseName}>
+              <strong>{exerciseName}:</strong>{" "}
+              {pb.weight && <span>🏋️‍♂️ Weight: {pb.weight} kg </span>}
+              {pb.reps && <span>💪 Reps: {pb.reps}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    <button className="summary-close-button" onClick={() => setLastSavedWorkout(null)}>Close</button>
+  </div>
+)}
+
+
         </div>
     );
 }
